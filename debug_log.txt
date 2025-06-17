@@ -1,0 +1,445 @@
+[ENTRY] Backtrack at depth 0
+Board state:
+  . . . . . . . . . .
+  . . . . . . . . . .
+  . . . . . . . . . .
+  . . . . . . . . . .
+  . . . . . . . . . .
+  . . . . . . . . . .
+  . . . . . . . . . .
+  . . . . . . . . . .
+  . . . . . . . . . .
+  . . . . . . . . . .
+[DECISION] Solving for region 1
+[FAIL] Combo ((0, 0), (0, 1)) is invalid.
+[PASS] Combo ((0, 0), (0, 2)) is valid. Recursing.
+  [ENTRY] Backtrack at depth 1
+  Board state:
+    S X S X X X X X X X
+    X X X X . . . . . .
+    X . . . . . . . . .
+    . . . . . . . . . .
+    . . . . . . . . . .
+    . . . . . . . . . .
+    . . . . . . . . . .
+    . . . . . . . . . .
+    . . . . . . . . . .
+    . . . . . . . . . .
+  [DECISION] Solving for region 5
+  [FAIL] Combo ((2, 2), (3, 2)) is invalid.
+  [PASS] Combo ((2, 2), (4, 2)) is valid. Recursing.
+    [ENTRY] Backtrack at depth 2
+    [EXIT] Contradiction found during propagation.
+  [PASS] Combo ((2, 2), (5, 2)) is valid. Recursing.
+    [ENTRY] Backtrack at depth 2
+    [EXIT] Contradiction found during propagation.
+  [FAIL] Combo ((3, 2), (4, 2)) is invalid.
+  [PASS] Combo ((3, 2), (5, 2)) is valid. Recursing.
+    [ENTRY] Backtrack at depth 2
+    [EXIT] Contradiction found during propagation.
+  [FAIL] Combo ((4, 2), (5, 2)) is invalid.
+[FAIL] Combo ((0, 0), (1, 0)) is invalid.
+[PASS] Combo ((0, 0), (2, 0)) is valid. Recursing.
+  [ENTRY] Backtrack at depth 1
+  Board state:
+    S X X . . . . . . .
+    X X . . . . . . . .
+    S X . . . . . . . .
+    X X . . . . . . . .
+    X . . . . . . . . .
+    X . . . . . . . . .
+    X . . . . . . . . .
+    X . . . . . . . . .
+    X . . . . . . . . .
+    X . . . . . . . . .
+  [DECISION] Solving for region 5
+  [FAIL] Combo ((1, 2), (2, 2)) is invalid.
+  [PASS] Combo ((1, 2), (3, 2)) is valid. Recursing.
+    [ENTRY] Backtrack at depth 2
+    Board state:
+      S X X X . . . . . .
+      X X S X . . . . . .
+      S X X X . . . . . .
+      X X S X . . . . . .
+      X X X X . . . . . .
+      X . X . . . . . . .
+      X . X . . . . . . .
+      X . X . . . . . . .
+      X . X . . . . . . .
+      X . X . . . . . . .
+    [DECISION] Solving for region 2
+    [FAIL] Combo ((0, 4), (1, 4)) is invalid.
+    [FAIL] Combo ((0, 4), (1, 5)) is invalid.
+    [PASS] Combo ((0, 4), (2, 5)) is valid. Recursing.
+      [ENTRY] Backtrack at depth 3
+      [EXIT] Contradiction found during propagation.
+    [PASS] Combo ((0, 4), (3, 5)) is valid. Recursing.
+      [ENTRY] Backtrack at depth 3
+      [EXIT] Contradiction found during propagation.
+    [PASS] Combo ((0, 4), (4, 5)) is valid. Recursing.
+      [ENTRY] Backtrack at depth 3
+      Board state:
+        S X X X S X X X X X
+        X X S X X X . . . .
+        S X X X . X . . . .
+        X X S X X X X . . .
+        X X X X X S X . . .
+        X . X . X X X . . .
+        X . X . . . . . . .
+        X . X . . . . . . .
+        X . X . . . . . . .
+        X . X . . . . . . .
+      [DECISION] Solving for region 3
+      [FAIL] Combo ((1, 6), (1, 7)) is invalid.
+      [FAIL] Combo ((1, 6), (2, 6)) is invalid.
+      [FAIL] Combo ((1, 7), (2, 6)) is invalid.
+    [FAIL] Combo ((1, 4), (1, 5)) is invalid.
+    [FAIL] Combo ((1, 4), (2, 5)) is invalid.
+    [PASS] Combo ((1, 4), (3, 5)) is valid. Recursing.
+      [ENTRY] Backtrack at depth 3
+      [EXIT] Contradiction found during propagation.
+    [PASS] Combo ((1, 4), (4, 5)) is valid. Recursing.
+      [ENTRY] Backtrack at depth 3
+      Board state:
+        S X X X X X . . . .
+        X X S X S X X X X X
+        S X X X X X . . . .
+        X X S X X X X . . .
+        X X X X X S X . . .
+        X . X . X X X . . .
+        X . X . . . . . . .
+        X . X . . . . . . .
+        X . X . . . . . . .
+        X . X . . . . . . .
+      [DECISION] Solving for region 3
+      [FAIL] Combo ((0, 6), (0, 7)) is invalid.
+      [PASS] Combo ((0, 6), (2, 6)) is valid. Recursing.
+        [ENTRY] Backtrack at depth 4
+        Board state:
+          S X X X X X S X X X
+          X X S X S X X X X X
+          S X X X X X S X X X
+          X X S X X X X X . .
+          X X X X X S X . . .
+          X . X . X X X . . .
+          X . X . . . X . . .
+          X . X . . . X . . .
+          X . X . . . X . . .
+          X . X . . . X . . .
+        [DECISION] Solving for region 4
+        [FAIL] Combo ((3, 8), (3, 9)) is invalid.
+        [FAIL] Combo ((3, 8), (4, 7)) is invalid.
+        [PASS] Combo ((3, 9), (4, 7)) is valid. Recursing.
+          [ENTRY] Backtrack at depth 5
+          Board state:
+            S X X X X X S X X X
+            X X S X S X X X X X
+            S X X X X X S X X X
+            X X S X X X X X X S
+            X X X X X S X S X X
+            X . X . X X X X X .
+            X . X . . . X . . .
+            X . X . . . X . . .
+            X . X . . . X . . .
+            X . X . . . X . . .
+          [DECISION] Solving for region 8
+          [FAIL] Combo ((6, 5), (7, 5)) is invalid.
+          [PASS] Combo ((6, 5), (8, 4)) is valid. Recursing.
+            [ENTRY] Backtrack at depth 6
+            Board state:
+              S X X X X X S X X X
+              X X S X S X X X X X
+              S X X X X X S X X X
+              X X S X X X X X X S
+              X X X X X S X S X X
+              X . X S X X X X X .
+              X X X S X S X X X X
+              X . X X X X X . . .
+              X . X X S X X . . .
+              X . X X X X X . . .
+            [DECISION] Solving for region 7
+            [PASS] Combo () is valid. Recursing.
+              [ENTRY] Backtrack at depth 7
+              Board state:
+                S X X X X X S X X X
+                X X S X S X X X X X
+                S X X X X X S X X X
+                X X S X X X X X X S
+                X X X X X S X S X X
+                X . X S X X X X X .
+                X X X S X S X X X X
+                X . X X X X X . . .
+                X . X X S X X . . .
+                X . X X X X X . . .
+              [DECISION] Solving for region 6
+              [PASS] Combo ((5, 1), (7, 1)) is valid. Recursing.
+                [ENTRY] Backtrack at depth 8
+                Board state:
+                  S X X X X X S X X X
+                  X X S X S X X X X X
+                  S X X X X X S X X X
+                  X X S X X X X X X S
+                  X X X X X S X S X X
+                  X S X S X X X X X X
+                  X X X S X S X X X X
+                  X S X X X X X . . .
+                  X X X X S X X . . .
+                  X X X X X X X . . .
+                [DECISION] Solving for region 9
+                [FAIL] Combo ((7, 9), (8, 9)) is invalid.
+                [PASS] Combo ((7, 9), (9, 8)) is valid. Recursing.
+                  [ENTRY] Backtrack at depth 9
+                  [EXIT] Contradiction found during propagation.
+                [PASS] Combo ((7, 9), (9, 9)) is valid. Recursing.
+                  [ENTRY] Backtrack at depth 9
+                  [EXIT] Contradiction found during propagation.
+                [FAIL] Combo ((8, 9), (9, 8)) is invalid.
+                [FAIL] Combo ((8, 9), (9, 9)) is invalid.
+                [FAIL] Combo ((9, 8), (9, 9)) is invalid.
+              [PASS] Combo ((5, 1), (8, 1)) is valid. Recursing.
+                [ENTRY] Backtrack at depth 8
+                Board state:
+                  S X X X X X S X X X
+                  X X S X S X X X X X
+                  S X X X X X S X X X
+                  X X S X X X X X X S
+                  X X X X X S X S X X
+                  X S X S X X X X X X
+                  X X X S X S X X X X
+                  X X X X X X X . . .
+                  X S X X S X X X X X
+                  X X X X X X X . . .
+                [DECISION] Solving for region 9
+                [PASS] Combo ((7, 9), (9, 8)) is valid. Recursing.
+                  [ENTRY] Backtrack at depth 9
+                  [EXIT] Contradiction found during propagation.
+                [PASS] Combo ((7, 9), (9, 9)) is valid. Recursing.
+                  [ENTRY] Backtrack at depth 9
+                  [EXIT] Contradiction found during propagation.
+                [FAIL] Combo ((9, 8), (9, 9)) is invalid.
+              [PASS] Combo ((5, 1), (9, 1)) is valid. Recursing.
+                [ENTRY] Backtrack at depth 8
+                Board state:
+                  S X X X X X S X X X
+                  X X S X S X X X X X
+                  S X X X X X S X X X
+                  X X S X X X X X X S
+                  X X X X X S X S X X
+                  X S X S X X X X X X
+                  X X X S X S X X X X
+                  X X X X X X X . . .
+                  X X X X S X X . . .
+                  X S X X X X X . . .
+                [DECISION] Solving for region 9
+                [FAIL] Combo ((7, 9), (8, 9)) is invalid.
+                [PASS] Combo ((7, 9), (9, 8)) is valid. Recursing.
+                  [ENTRY] Backtrack at depth 9
+                  [EXIT] Contradiction found during propagation.
+                [PASS] Combo ((7, 9), (9, 9)) is valid. Recursing.
+                  [ENTRY] Backtrack at depth 9
+                  [EXIT] Contradiction found during propagation.
+                [FAIL] Combo ((8, 9), (9, 8)) is invalid.
+                [FAIL] Combo ((8, 9), (9, 9)) is invalid.
+                [FAIL] Combo ((9, 8), (9, 9)) is invalid.
+              [FAIL] Combo ((7, 1), (8, 1)) is invalid.
+              [PASS] Combo ((7, 1), (9, 1)) is valid. Recursing.
+                [ENTRY] Backtrack at depth 8
+                Board state:
+                  S X X X X X S X X X
+                  X X S X S X X X X X
+                  S X X X X X S X X X
+                  X X S X X X X X X S
+                  X X X X X S X S X X
+                  X X X S X X X X X .
+                  X X X S X S X X X X
+                  X S X X X X X . . .
+                  X X X X S X X . . .
+                  X S X X X X X . . .
+                [DECISION] Solving for region 9
+                [PASS] Combo ((5, 9), (7, 9)) is valid. Recursing.
+                  [ENTRY] Backtrack at depth 9
+                  [EXIT] Contradiction found during propagation.
+                [PASS] Combo ((5, 9), (8, 9)) is valid. Recursing.
+                  [ENTRY] Backtrack at depth 9
+                  [EXIT] Contradiction found during propagation.
+                [PASS] Combo ((5, 9), (9, 8)) is valid. Recursing.
+                  [ENTRY] Backtrack at depth 9
+                  [EXIT] Contradiction found during propagation.
+                [PASS] Combo ((5, 9), (9, 9)) is valid. Recursing.
+                  [ENTRY] Backtrack at depth 9
+                  [EXIT] Contradiction found during propagation.
+                [FAIL] Combo ((7, 9), (8, 9)) is invalid.
+                [PASS] Combo ((7, 9), (9, 8)) is valid. Recursing.
+                  [ENTRY] Backtrack at depth 9
+                  [EXIT] Contradiction found during propagation.
+                [PASS] Combo ((7, 9), (9, 9)) is valid. Recursing.
+                  [ENTRY] Backtrack at depth 9
+                  [EXIT] Contradiction found during propagation.
+                [FAIL] Combo ((8, 9), (9, 8)) is invalid.
+                [FAIL] Combo ((8, 9), (9, 9)) is invalid.
+                [FAIL] Combo ((9, 8), (9, 9)) is invalid.
+              [FAIL] Combo ((8, 1), (9, 1)) is invalid.
+          [PASS] Combo ((6, 5), (8, 5)) is valid. Recursing.
+            [ENTRY] Backtrack at depth 6
+            [EXIT] Contradiction found during propagation.
+          [FAIL] Combo ((7, 5), (8, 4)) is invalid.
+          [FAIL] Combo ((7, 5), (8, 5)) is invalid.
+          [FAIL] Combo ((8, 4), (8, 5)) is invalid.
+      [PASS] Combo ((0, 7), (2, 6)) is valid. Recursing.
+        [ENTRY] Backtrack at depth 4
+        Board state:
+          S X X X X X X S X X
+          X X S X S X X X X X
+          S X X X X X S X X X
+          X X S X X X X X . .
+          X X X X X S X . . .
+          X . X . X X X . . .
+          X . X . . . . . . .
+          X . X . . . . . . .
+          X . X . . . . . . .
+          X . X . . . . . . .
+        [DECISION] Solving for region 4
+        [FAIL] Combo ((3, 8), (3, 9)) is invalid.
+        [FAIL] Combo ((3, 8), (4, 7)) is invalid.
+        [PASS] Combo ((3, 9), (4, 7)) is valid. Recursing.
+          [ENTRY] Backtrack at depth 5
+          Board state:
+            S X X X X X X S X X
+            X X S X S X X X X X
+            S X X X X X S X X X
+            X X S X X X X X X S
+            X X X X X S X S X X
+            X . X . X X X X X .
+            X . X . . . . X . .
+            X . X . . . . X . .
+            X . X . . . . X . .
+            X . X . . . . X . .
+          [DECISION] Solving for region 8
+          [FAIL] Combo ((6, 5), (7, 5)) is invalid.
+          [PASS] Combo ((6, 5), (8, 4)) is valid. Recursing.
+            [ENTRY] Backtrack at depth 6
+            Board state:
+              S X X X X X X S X X
+              X X S X S X X X X X
+              S X X X X X S X X X
+              X X S X X X X X X S
+              X X X X X S X S X X
+              X . X S X X X X X .
+              X X X S X S X X X X
+              X . X X X X X X . .
+              X . X X S X . X . .
+              X . X X X X . X . .
+            [DECISION] Solving for region 7
+            [PASS] Combo () is valid. Recursing.
+              [ENTRY] Backtrack at depth 7
+              Board state:
+                S X X X X X X S X X
+                X X S X S X X X X X
+                S X X X X X S X X X
+                X X S X X X X X X S
+                X X X X X S X S X X
+                X . X S X X X X X .
+                X X X S X S X X X X
+                X . X X X X X X . .
+                X . X X S X . X . .
+                X . X X X X . X . .
+              [DECISION] Solving for region 10
+              [PASS] Combo ((7, 8), (8, 6)) is valid. Recursing.
+                [ENTRY] Backtrack at depth 8
+                Board state:
+                  S X X X X X X S X X
+                  X X S X S X X X X X
+                  S X X X X X S X X X
+                  X X S X X X X X X S
+                  X X X X X S X S X X
+                  X . X S X X X X X .
+                  X X X S X S X X X X
+                  X . X X X X X X S X
+                  X X X X S X S X X X
+                  X . X X X X X X . .
+                [DECISION] Solving for region 9
+                [PASS] Combo ((5, 9), (9, 8)) is valid. Recursing.
+                  [ENTRY] Backtrack at depth 9
+                  Board state:
+                    S X X X X X X S X X
+                    X X S X S X X X X X
+                    S X X X X X S X X X
+                    X X S X X X X X X S
+                    X X X X X S X S X X
+                    X X X S X X X X X S
+                    X X X S X S X X X X
+                    X S X X X X X X S X
+                    X X X X S X S X X X
+                    X S X X X X X X S X
+                  [DECISION] Solving for region 6
+                  [PASS] Combo () is valid. Recursing.
+                    [ENTRY] Backtrack at depth 10
+                    Board state:
+                      S X X X X X X S X X
+                      X X S X S X X X X X
+                      S X X X X X S X X X
+                      X X S X X X X X X S
+                      X X X X X S X S X X
+                      X X X S X X X X X S
+                      X X X S X S X X X X
+                      X S X X X X X X S X
+                      X X X X S X S X X X
+                      X S X X X X X X S X
+                    [96m[SOLUTION FOUND][0m
+                [PASS] Combo ((5, 9), (9, 9)) is valid. Recursing.
+                  [ENTRY] Backtrack at depth 9
+                  [EXIT] Contradiction found during propagation.
+                [FAIL] Combo ((9, 8), (9, 9)) is invalid.
+              [FAIL] Combo ((7, 8), (8, 8)) is invalid.
+              [PASS] Combo ((7, 8), (9, 6)) is valid. Recursing.
+                [ENTRY] Backtrack at depth 8
+                Board state:
+                  S X X X X X X S X X
+                  X X S X S X X X X X
+                  S X X X X X S X X X
+                  X X S X X X X X X S
+                  X X X X X S X S X X
+                  X . X S X X X X X .
+                  X X X S X S X X X X
+                  X . X X X X X X S X
+                  X . X X S X X X X X
+                  X . X X X X S X . .
+                [DECISION] Solving for region 9
+                [PASS] Combo ((5, 9), (9, 8)) is valid. Recursing.
+                  [ENTRY] Backtrack at depth 9
+                  Board state:
+                    S X X X X X X S X X
+                    X X S X S X X X X X
+                    S X X X X X S X X X
+                    X X S X X X X X X S
+                    X X X X X S X S X X
+                    X X X S X X X X X S
+                    X X X S X S X X X X
+                    X S X X X X X X S X
+                    X S X X S X X X X X
+                    X X X X X X S X S X
+                  [DECISION] Solving for region 6
+                  [PASS] Combo () is valid. Recursing.
+                    [ENTRY] Backtrack at depth 10
+                    Board state:
+                      S X X X X X X S X X
+                      X X S X S X X X X X
+                      S X X X X X S X X X
+                      X X S X X X X X X S
+                      X X X X X S X S X X
+                      X X X S X X X X X S
+                      X X X S X S X X X X
+                      X S X X X X X X S X
+                      X S X X S X X X X X
+                      X X X X X X S X S X
+                    [96m[SOLUTION FOUND][0m
+                  [EXIT] Max solutions found. Terminating branch.
+                [EXIT] Max solutions found. Terminating branch.
+              [EXIT] Max solutions found. Terminating branch.
+            [EXIT] Max solutions found. Terminating branch.
+          [EXIT] Max solutions found. Terminating branch.
+        [EXIT] Max solutions found. Terminating branch.
+      [EXIT] Max solutions found. Terminating branch.
+    [EXIT] Max solutions found. Terminating branch.
+  [EXIT] Max solutions found. Terminating branch.
+[EXIT] Max solutions found. Terminating branch.
