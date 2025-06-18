@@ -106,14 +106,6 @@ WEBSITE_SIZE_IDS = list(range(12))
 def get_puzzle_from_website(size_selection):
     """
     Fetches puzzle data from puzzle-star-battle.com.
-
-    Args:
-        size_selection (int): The index corresponding to the desired puzzle size
-                              in the PUZZLE_DEFINITIONS list.
-
-    Returns:
-        dict or None: A dictionary containing the 'task' string and 'solution_hash'
-                      if successful, otherwise None.
     """
     url = "https://www.puzzle-star-battle.com/"
     website_size_id = WEBSITE_SIZE_IDS[size_selection]
@@ -131,38 +123,83 @@ def get_puzzle_from_website(size_selection):
     except requests.RequestException as e:
         print(f"Error: Could not fetch puzzle data. {e}"); return None
 
+def encode_player_annotations(player_grid):
+    """
+    Encodes a player's grid state into a compact annotation string.
+    """
+    dim = len(player_grid)
+    game_to_sbn_state = {STATE_EMPTY: 0, STATE_SECONDARY_MARK: 1, STATE_STAR: 2}
+    flat_states = [game_to_sbn_state.get(player_grid[r][c], 0) for r in range(dim) for c in range(dim)]
+
+    if not any(flat_states):
+        return ""
+
+    sbn_states = []
+    if dim in [10, 11]:
+        sbn_states.append(str(flat_states[0]))
+        flat_states = flat_states[1:]
+
+    for i in range(0, len(flat_states), 3):
+        chunk = flat_states[i:i+3]
+        while len(chunk) < 3: chunk.append(0)
+        s1, s2, s3 = chunk
+        value = s1 * 16 + s2 * 4 + s3
+        sbn_states.append(SBN_INT_TO_CHAR[value])
+
+    return "e" + "".join(sbn_states)
+
+def decode_player_annotations(annotation_data_str, dim):
+    """
+    Decodes an annotation string into a 2D player grid.
+    """
+    if not annotation_data_str or not annotation_data_str.startswith('e'):
+        return None
+
+    try:
+        data = annotation_data_str[1:] # Strip the 'e' flag
+        player_grid = [[STATE_EMPTY] * dim for _ in range(dim)]
+        flat_indices = [(r, c) for r in range(dim) for c in range(dim)]
+        sbn_to_game_state = {0: STATE_EMPTY, 1: STATE_SECONDARY_MARK, 2: STATE_STAR}
+        char_cursor, cell_cursor = 0, 0
+
+        if dim in [10, 11]:
+            value = int(data[0])
+            player_grid[0][0] = sbn_to_game_state.get(value, STATE_EMPTY)
+            char_cursor, cell_cursor = 1, 1
+        
+        while cell_cursor < dim * dim and char_cursor < len(data):
+            char = data[char_cursor]
+            value = SBN_CHAR_TO_INT.get(char, 0)
+            states = [value // 16, (value % 16) // 4, value % 4]
+            for i in range(3):
+                if cell_cursor + i < dim * dim:
+                    r, c = flat_indices[cell_cursor + i]
+                    player_grid[r][c] = sbn_to_game_state.get(states[i], STATE_EMPTY)
+            cell_cursor += 3
+            char_cursor += 1
+        return player_grid
+    except (KeyError, IndexError, ValueError):
+        return None
+
 def decode_sbn(sbn_string):
     """
     Decodes a Star Battle Number (SBN) string into its constituent puzzle data.
-    This handles region layout and optional player annotations.
-
-    Args:
-        sbn_string (str): The SBN string to decode.
-
-    Returns:
-        dict or None: A puzzle data dictionary with 'task', 'stars', and optionally
-                      'player_grid', or None if decoding fails.
     """
     try:
         size_code = sbn_string[0:2]
         dim = SBN_CODE_TO_DIM_MAP.get(size_code)
-        if not dim: raise ValueError(f"Unknown SBN size code '{size_code}'")
+        if not dim: return None
         stars = int(sbn_string[2])
         is_annotated = sbn_string[3] == 'e'
         
-        # Calculate the exact number of bits and characters for the region data
         border_bits_needed = 2 * dim * (dim - 1)
         border_chars_needed = math.ceil(border_bits_needed / 6)
         region_data_str = sbn_string[4 : 4 + border_chars_needed]
         
-        # Decode base64 to a bitfield
         full_bitfield = "".join(bin(SBN_CHAR_TO_INT[char])[2:].zfill(6) for char in region_data_str)
-        
-        # Calculate and remove leading padding bits
         padding_bits = len(full_bitfield) - border_bits_needed
         border_data = full_bitfield[padding_bits:]
 
-        # Split into vertical and horizontal border data
         num_single_direction_borders = dim * (dim - 1)
         vertical_bits = border_data[0 : num_single_direction_borders]
         horizontal_bits = border_data[num_single_direction_borders : border_bits_needed]
@@ -170,53 +207,70 @@ def decode_sbn(sbn_string):
         region_grid = reconstruct_grid_from_borders(dim, vertical_bits, horizontal_bits)
         task_string = ",".join(str(cell) for row in region_grid for cell in row)
         
-        # Handle the optional annotation data at the end of the SBN
         decoded_player_grid = None
         if is_annotated:
             annotation_data_str = sbn_string[4 + border_chars_needed:]
-            if annotation_data_str:
-                player_grid = [[STATE_EMPTY] * dim for _ in range(dim)]
-                flat_indices = [(r, c) for r in range(dim) for c in range(dim)]
-                sbn_to_game_state = {0: STATE_EMPTY, 1: STATE_SECONDARY_MARK, 2: STATE_STAR}
-                char_cursor, cell_cursor = 0, 0
-                if dim in [10, 11]: # Special annotation case for these sizes
-                    value = int(annotation_data_str[0])
-                    player_grid[0][0] = sbn_to_game_state.get(value, STATE_EMPTY)
-                    char_cursor, cell_cursor = 1, 1
-                while cell_cursor < dim * dim and char_cursor < len(annotation_data_str):
-                    char = annotation_data_str[char_cursor]
-                    value = SBN_CHAR_TO_INT.get(char, 0)
-                    states = [value // 16, (value % 16) // 4, value % 4]
-                    for i in range(3):
-                        if cell_cursor + i < dim * dim:
-                            r, c = flat_indices[cell_cursor + i]
-                            player_grid[r][c] = sbn_to_game_state.get(states[i], STATE_EMPTY)
-                    cell_cursor += 3
-                    char_cursor += 1
-                decoded_player_grid = player_grid
+            decoded_player_grid = decode_player_annotations("e" + annotation_data_str, dim)
 
         return {'task': task_string, 'solution_hash': None, 'stars': stars, 'player_grid': decoded_player_grid}
-    except (KeyError, IndexError, ValueError) as e:
-        print(f"--- SBN DECODING FAILED ---"); print(f"Error: {e}"); return None
+    except (KeyError, IndexError, ValueError):
+        return None
+
+def decode_web_task_string(input_string):
+    """
+    Decodes a web 'task' string, with or without annotations, into puzzle data.
+    """
+    try:
+        match = re.match(r'^([\d,]+)((e[0-9a-zA-Z\-_]+)*)$', input_string)
+        if not match:
+            return None
+        
+        task_part, annotation_part, _ = match.groups()
+        
+        region_grid, dim = parse_and_validate_grid(task_part)
+        if not region_grid:
+            return None
+            
+        stars = 1
+        for pdef in PUZZLE_DEFINITIONS:
+            if pdef['dim'] == dim:
+                stars = pdef['stars']
+                break
+                
+        decoded_player_grid = None
+        if annotation_part:
+            decoded_player_grid = decode_player_annotations(annotation_part, dim)
+
+        return {'task': task_part, 'solution_hash': None, 'stars': stars, 'player_grid': decoded_player_grid}
+    except Exception:
+        return None
+
+def universal_import(input_string):
+    """
+    Intelligently decodes a puzzle string, trying SBN format first, then web task format.
+    """
+    print("\nAttempting to import puzzle string...")
+    puzzle_data = decode_sbn(input_string)
+    if puzzle_data:
+        print("Successfully decoded as SBN format.")
+        return puzzle_data
+    
+    puzzle_data = decode_web_task_string(input_string)
+    if puzzle_data:
+        print("Successfully decoded as Web Task format.")
+        return puzzle_data
+        
+    print("Error: Could not recognize the puzzle format.")
+    return None
 
 def encode_to_sbn(region_grid, stars, player_grid=None):
     """
     Encodes a region grid into an SBN string. Optionally includes player annotations.
-
-    Args:
-        region_grid (list[list[int]]): The 2D list representing the puzzle's regions.
-        stars (int): The number of stars per region/row/column.
-        player_grid (list[list[int]], optional): The player's current grid state.
-                                                  If provided, an annotated SBN is created.
-
-    Returns:
-        str or None: The generated SBN string, or None if the size is unsupported.
     """
     dim = len(region_grid)
     sbn_code = DIM_TO_SBN_CODE_MAP.get(dim)
     if not sbn_code: return None
 
-    # Part 1: Encode Region Data
     vertical_bits = ['1' if region_grid[r][c] != region_grid[r][c+1] else '0' for r in range(dim) for c in range(dim - 1)]
     horizontal_bits = ['1' if region_grid[r][c] != region_grid[r+1][c] else '0' for c in range(dim) for r in range(dim - 1)]
     clean_bitfield = "".join(vertical_bits) + "".join(horizontal_bits)
@@ -228,53 +282,27 @@ def encode_to_sbn(region_grid, stars, player_grid=None):
     region_data_chars = [SBN_INT_TO_CHAR[int(padded_bitfield[i:i+6], 2)] for i in range(0, len(padded_bitfield), 6)]
     region_data = "".join(region_data_chars)
 
-    # Part 2: Encode Annotation Data (if player_grid is provided)
-    annotation_data = ""
-    flag = 'W' # 'W' for World (puzzle only)
-    if player_grid:
-        flag = 'e' # 'e' for Edit/Annotated
-        game_to_sbn_state = {STATE_EMPTY: 0, STATE_SECONDARY_MARK: 1, STATE_STAR: 2}
-        flat_states = [game_to_sbn_state.get(player_grid[r][c], 0) for r in range(dim) for c in range(dim)]
-        
-        sbn_states = []
-        if dim in [10, 11]:
-            sbn_states.append(str(flat_states[0]))
-            flat_states = flat_states[1:]
-
-        for i in range(0, len(flat_states), 3):
-            chunk = flat_states[i:i+3]
-            while len(chunk) < 3: chunk.append(0)
-            s1, s2, s3 = chunk
-            value = s1 * 16 + s2 * 4 + s3
-            sbn_states.append(SBN_INT_TO_CHAR[value])
-        annotation_data = "".join(sbn_states)
+    annotation_data = encode_player_annotations(player_grid) if player_grid else ""
+    flag = 'e' if annotation_data else 'W'
+    
+    if annotation_data:
+        annotation_data = annotation_data[1:]
 
     return f"{sbn_code}{stars}{flag}{region_data}{annotation_data}"
 
 def reconstruct_grid_from_borders(dim, vertical_bits, horizontal_bits):
     """
     Builds a numbered region grid from border bitfields using a flood-fill algorithm.
-
-    Args:
-        dim (int): The dimension of the grid.
-        vertical_bits (str): A bitstring for vertical borders.
-        horizontal_bits (str): A bitstring for horizontal borders.
-
-    Returns:
-        list[list[int]]: The fully reconstructed 2D region grid.
     """
     region_grid = [[0] * dim for _ in range(dim)]
     region_id = 1
-    # Iterate through every cell to find unassigned regions
     for r_start in range(dim):
         for c_start in range(dim):
             if region_grid[r_start][c_start] == 0:
                 q = deque([(r_start, c_start)])
                 region_grid[r_start][c_start] = region_id
-                # Perform a Breadth-First Search (BFS) to find all connected cells
                 while q:
                     r, c = q.popleft()
-                    # Check neighbors, expanding if there is no border between them
                     if c < dim - 1 and region_grid[r][c+1] == 0 and vertical_bits[r*(dim-1) + c] == '0': region_grid[r][c+1] = region_id; q.append((r, c+1))
                     if c > 0 and region_grid[r][c-1] == 0 and vertical_bits[r*(dim-1) + (c-1)] == '0': region_grid[r][c-1] = region_id; q.append((r, c-1))
                     if r < dim - 1 and region_grid[r+1][c] == 0 and horizontal_bits[c*(dim-1) + r] == '0': region_grid[r+1][c] = region_id; q.append((r+1, c))
@@ -289,13 +317,6 @@ def reconstruct_grid_from_borders(dim, vertical_bits, horizontal_bits):
 def parse_and_validate_grid(task_string):
     """
     Parses a comma-separated task string into a 2D list.
-
-    Args:
-        task_string (str): The string of comma-separated region numbers.
-
-    Returns:
-        tuple[list, int] or tuple[None, None]: A tuple of (grid, dimension) on success,
-                                               or (None, None) on failure.
     """
     if not task_string: return None, None
     try:
@@ -309,11 +330,6 @@ def parse_and_validate_grid(task_string):
 def display_terminal_grid(grid, title, content_grid=None):
     """
     Prints a colorized representation of the grid to the terminal.
-
-    Args:
-        grid (list[list[int]]): The region grid.
-        title (str): The title to print above the grid.
-        content_grid (list[list[int]], optional): A grid of player marks to overlay.
     """
     if not grid: return
     RESET = "\033[0m"; print(f"\n--- {title} ---")
@@ -337,28 +353,13 @@ def display_terminal_grid(grid, title, content_grid=None):
 def reset_game_state(puzzle_data):
     """
     Resets the entire game state based on new puzzle data.
-
-    Args:
-        puzzle_data (dict): A dictionary containing puzzle info.
-
-    Returns:
-        tuple: A tuple of all major game state variables, or Nones on failure.
     """
     if not puzzle_data or 'task' not in puzzle_data: return None, None, None, None, None, None
     region_grid, dimension = parse_and_validate_grid(puzzle_data['task'])
     if region_grid:
         display_terminal_grid(region_grid, "Terminal Symbol Display")
         
-        # This logic was restored: Infer star count if not explicitly provided
-        stars = puzzle_data.get('stars', 0)
-        if stars == 0:
-            for pdef in PUZZLE_DEFINITIONS:
-                if pdef['dim'] == dimension:
-                    stars = pdef['stars']
-                    break
-            if stars == 0: stars = 1 # Fallback for unknown sizes
-        
-        # Load player marks from SBN if they exist, otherwise create empty grid
+        stars = puzzle_data.get('stars', 1)
         if puzzle_data.get('player_grid'):
             player_grid = puzzle_data['player_grid']
         else:
@@ -371,13 +372,6 @@ def reset_game_state(puzzle_data):
 def check_solution(player_grid, puzzle_data):
     """
     Validates the player's current grid against the puzzle's known solution hash.
-
-    Args:
-        player_grid (list[list[int]]): The current player grid.
-        puzzle_data (dict): The puzzle data containing the solution hash.
-
-    Returns:
-        bool: True if the solution is correct, False otherwise.
     """
     if not puzzle_data or 'solution_hash' not in puzzle_data or not puzzle_data['solution_hash']: return False
     yn_string = "".join(['y' if cell == STATE_STAR else 'n' for row in player_grid for cell in row])
@@ -414,18 +408,15 @@ def draw_background_colors(screen, region_grid, cell_size):
 def draw_grid_lines(screen, region_grid, cell_size):
     """Draws thin grid lines and thick region border lines."""
     dim = len(region_grid)
-    # Thin lines for all cells
     for i in range(dim + 1):
         pygame.draw.line(screen, COLOR_GRID_LINES, (i * cell_size, 0), (i * cell_size, GRID_AREA_HEIGHT), BORDER_NORMAL)
         pygame.draw.line(screen, COLOR_GRID_LINES, (0, i * cell_size), (GRID_AREA_WIDTH, i * cell_size), BORDER_NORMAL)
-    # Thick lines for region boundaries
     for r in range(dim):
         for c in range(dim):
             if c < dim - 1 and region_grid[r][c] > 0 and region_grid[r][c+1] > 0 and region_grid[r][c] != region_grid[r][c+1]:
                 pygame.draw.line(screen, COLOR_BLACK, ((c + 1) * cell_size, r * cell_size), ((c + 1) * cell_size, (r + 1) * cell_size), BORDER_THICK)
             if r < dim - 1 and region_grid[r][c] > 0 and region_grid[r+1][c] > 0 and region_grid[r][c] != region_grid[r+1][c]:
                 pygame.draw.line(screen, COLOR_BLACK, (c * cell_size, (r + 1) * cell_size), ((c + 1) * cell_size, (r + 1) * cell_size), BORDER_THICK)
-    # Outer border
     pygame.draw.rect(screen, COLOR_BLACK, (0, 0, GRID_AREA_WIDTH, GRID_AREA_HEIGHT), BORDER_THICK)
 
 def draw_player_marks(screen, player_grid, mark_is_x, cell_size):
@@ -461,7 +452,6 @@ def draw_control_panel(screen, font, small_font, tiny_font, buttons, size_button
     pygame.draw.rect(screen, COLOR_PANEL, (GRID_AREA_WIDTH, 0, PANEL_WIDTH, WINDOW_HEIGHT))
     mouse_pos = pygame.mouse.get_pos()
     buttons['toggle']['text'] = "Mode: Xs" if mark_is_x else "Mode: Dots"
-    # Draw main buttons
     for name, b in buttons.items():
         is_disabled = (name == 'check' and not puzzle_data_exists) or \
                       (name == 'find' and not Z3_AVAILABLE)
@@ -471,7 +461,6 @@ def draw_control_panel(screen, font, small_font, tiny_font, buttons, size_button
         text_surf = font.render(b['text'], True, text_color)
         screen.blit(text_surf, text_surf.get_rect(center=b['rect'].center))
     
-    # Draw size selection buttons
     title_y = last_button_y + 40
     title_surf = font.render("Board Size", True, COLOR_BUTTON_TEXT)
     screen.blit(title_surf, title_surf.get_rect(center=(GRID_AREA_WIDTH + PANEL_WIDTH // 2, title_y)))
@@ -487,7 +476,6 @@ def draw_control_panel(screen, font, small_font, tiny_font, buttons, size_button
         screen.blit(num_surf, num_surf.get_rect(center=b['rect'].center))
         draw_star_indicator(screen, b['rect'], puzzle_def['stars'], tiny_font)
         
-    # Draw solution status text (Correct/Incorrect)
     if solution_status:
         color = COLOR_CORRECT if solution_status == "Correct!" else COLOR_INCORRECT
         status_surf = font.render(solution_status, True, color)
@@ -500,11 +488,13 @@ def draw_feedback_overlay(screen, color, alpha):
         overlay = pygame.Surface((GRID_AREA_WIDTH, GRID_AREA_HEIGHT), pygame.SRCALPHA)
         overlay.fill((*color, alpha)); screen.blit(overlay, (0, 0))
 
-def get_sbn_input_from_console():
-    """Minimizes the Pygame window and prompts for input in the console."""
+def get_input_from_console():
+    """Minimizes the Pygame window and prompts for puzzle string input in the console."""
     pygame.display.iconify()
-    sbn_string = input("\n--- PASTE SBN STRING AND PRESS ENTER ---\n> ")
-    return sbn_string.strip()
+    input_string = input("\n--- PASTE PUZZLE STRING (or 'q' to cancel) AND PRESS ENTER ---\n> ")
+    if input_string.lower() == 'q':
+        return None
+    return input_string.strip()
 
 # --------------------------------------------------------------------------
 # --- Z3 Solver Block ---
@@ -540,45 +530,34 @@ class Z3StarBattleSolver:
 
     def solve(self):
         """
-        Sets up and runs the Z3 solver. Tries to find up to two distinct solutions
-        to check for puzzle uniqueness.
-
-        Returns:
-            tuple[list, dict]: A tuple containing a list of found solutions (as grids)
-                               and an empty dictionary (for future use).
+        Sets up and runs the Z3 solver.
         """
         if not Z3_AVAILABLE: return [], {}
         
         s = Solver()
         grid_vars = [[Bool(f"cell_{r}_{c}") for c in range(self.dim)] for r in range(self.dim)]
         
-        # Constraint 1: Exactly N stars per row and column
         for i in range(self.dim):
             s.add(PbEq([(var, 1) for var in grid_vars[i]], self.stars_per_region))
             s.add(PbEq([(grid_vars[r][i], 1) for r in range(self.dim)], self.stars_per_region))
             
-        # Constraint 2: Exactly N stars per region
         regions = defaultdict(list)
         for r in range(self.dim):
             for c in range(self.dim): regions[self.region_grid[r][c]].append(grid_vars[r][c])
         for region_vars in regions.values():
             s.add(PbEq([(var, 1) for var in region_vars], self.stars_per_region))
             
-        # Constraint 3: Stars cannot be adjacent (including diagonally)
         for r in range(self.dim):
             for c in range(self.dim):
                 neighbors = [Not(grid_vars[nr][nc]) for dr in range(-1,2) for dc in range(-1,2) if not(dr==0 and dc==0) and 0<=(nr:=r+dr)<self.dim and 0<=(nc:=c+dc)<self.dim]
                 s.add(Implies(grid_vars[r][c], And(neighbors)))
         
-        # Find up to two solutions
         solutions = []
         if s.check() == sat:
-            # First solution
             model = s.model()
             solution_board = [[(1 if model.evaluate(grid_vars[r][c]) else 0) for c in range(self.dim)] for r in range(self.dim)]
             solutions.append(solution_board)
             
-            # Block the first solution and check for a second one
             blocking_clause = Or([grid_vars[r][c] if solution_board[r][c] == 0 else Not(grid_vars[r][c]) for r in range(self.dim) for c in range(self.dim)])
             s.add(blocking_clause)
             if s.check() == sat:
@@ -600,30 +579,31 @@ def main():
     clock = pygame.time.Clock(); font = pygame.font.Font(None, 32)
     small_font = pygame.font.Font(None, 24); tiny_font = pygame.font.Font(None, 18)
 
-    # --- Initial Puzzle Load with Conversion Feedback ---
     current_size_selection = 5
     puzzle_data = get_puzzle_from_website(current_size_selection)
     if puzzle_data:
-        p_def = PUZZLE_DEFINITIONS[current_size_selection]
-        grid, _ = parse_and_validate_grid(puzzle_data['task'])
-        sbn_eq = encode_to_sbn(grid, p_def['stars'])
-        print("\n" + "="*50)
-        print("PUZZLE LOADED: FROM WEBSITE")
-        print(f"  -> Web Task (Original): {puzzle_data['task']}")
-        print(f"  -> SBN Equivalent:      {sbn_eq}")
-        print("="*50)
+        puzzle_data['stars'] = PUZZLE_DEFINITIONS[current_size_selection]['stars']
     
     (region_grid, _, player_grid, current_grid_dim, cell_size, stars_per_region) = reset_game_state(puzzle_data)
     if not region_grid: sys.exit(1)
     
-    # --- UI Element Setup ---
     b_width, b_height, b_v_margin = 200, 45, 15
-    button_defs = [('new', 'New Puzzle'), ('sbn', 'Load SBN'), ('clear', 'Clear Board'), ('find', 'Find Solution'), ('toggle', 'Mode: Xs')]
+    button_defs = [('new', 'New Puzzle'), ('clear', 'Clear Board'), ('find', 'Find Solution'), ('toggle', 'Mode: Xs')]
     check_button_def = ('check', 'Check Solution')
     buttons = {}; current_y = b_v_margin
+    
+    import_export_y = current_y
+    b_width_half, b_h_margin = 95, 5
+    import_rect = pygame.Rect(GRID_AREA_WIDTH + (PANEL_WIDTH - b_width_half * 2 - b_h_margin) // 2, import_export_y, b_width_half, b_height)
+    export_rect = pygame.Rect(import_rect.right + b_h_margin, import_export_y, b_width_half, b_height)
+    buttons['import'] = {'rect': import_rect, 'text': 'Import'}
+    buttons['export'] = {'rect': export_rect, 'text': 'Export'}
+    current_y += b_height + b_v_margin
+
     for name, text in button_defs:
         rect = pygame.Rect(GRID_AREA_WIDTH + (PANEL_WIDTH - b_width) // 2, current_y, b_width, b_height)
         buttons[name] = {'rect': rect, 'text': text}; current_y += b_height + b_v_margin
+        
     last_button_y = current_y - b_v_margin
     check_rect = pygame.Rect(GRID_AREA_WIDTH + (PANEL_WIDTH - b_width) // 2, WINDOW_HEIGHT - b_height - b_v_margin, b_width, b_height)
     buttons[check_button_def[0]] = {'rect': check_rect, 'text': check_button_def[1]}
@@ -637,14 +617,12 @@ def main():
         x = GRID_AREA_WIDTH + s_padding + col * (s_radius * 2 + s_padding) + s_radius
         size_buttons[i] = {'rect': pygame.Rect(x-s_radius, y-s_radius, s_radius*2, s_radius*2), 'radius': s_radius}
     
-    # --- Game Loop Variables ---
     mark_is_x, solution_status = True, None
     is_left_down, is_dragging, click_cell = False, False, None
     feedback_overlay_alpha, feedback_overlay_color = 0, COLOR_CORRECT; FADE_SPEED = 4
 
     running = True
     while running:
-        # --- Event Handling ---
         for event in pygame.event.get():
             if event.type == pygame.QUIT: running = False
             def reset_feedback(): nonlocal solution_status, feedback_overlay_alpha; solution_status, feedback_overlay_alpha = None, 0
@@ -659,58 +637,54 @@ def main():
                         if b_data['rect'].collidepoint(pos) and not is_disabled:
                             clicked_on_button = True
                             
-                            # Handle Web Puzzle Loading (New or Size Button)
                             if b_name == 'new' or isinstance(b_name, int):
                                 if isinstance(b_name, int): current_size_selection = b_name
                                 new_puzzle_data = get_puzzle_from_website(current_size_selection)
                                 if new_puzzle_data:
-                                    p_def = PUZZLE_DEFINITIONS[current_size_selection]
-                                    grid, _ = parse_and_validate_grid(new_puzzle_data['task'])
-                                    sbn_eq = encode_to_sbn(grid, p_def['stars'])
-                                    print("\n" + "="*50)
-                                    print("PUZZLE LOADED: FROM WEBSITE")
-                                    print(f"  -> Web Task (Original): {new_puzzle_data['task']}")
-                                    print(f"  -> SBN Equivalent:      {sbn_eq}")
-                                    print("="*50)
+                                    new_puzzle_data['stars'] = PUZZLE_DEFINITIONS[current_size_selection]['stars']
                                     puzzle_data = new_puzzle_data
-                                (region_grid, _, player_grid, current_grid_dim, cell_size, stars_per_region) = reset_game_state(puzzle_data)
-                                reset_feedback()
+                                    (region_grid, _, player_grid, current_grid_dim, cell_size, stars_per_region) = reset_game_state(puzzle_data)
+                                    reset_feedback()
                                 
-                            # Handle SBN Puzzle Loading
-                            elif b_name == 'sbn':
-                                sbn_string = get_sbn_input_from_console()
+                            elif b_name == 'import':
+                                input_string = get_input_from_console()
                                 screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
                                 pygame.display.set_caption("Star Battle Playground")
-                                if sbn_string:
-                                    new_puzzle_data = decode_sbn(sbn_string)
+                                if input_string:
+                                    new_puzzle_data = universal_import(input_string)
                                     if new_puzzle_data:
-                                        print("\n" + "="*50)
-                                        print("PUZZLE LOADED: FROM SBN")
-                                        print(f"  -> SBN String (Original): {sbn_string}")
-                                        print(f"  -> Web Task Equivalent: {new_puzzle_data['task']}")
-                                        print("="*50)
                                         puzzle_data = new_puzzle_data
                                         (region_grid, _, player_grid, current_grid_dim, cell_size, stars_per_region) = reset_game_state(puzzle_data)
                                         current_size_selection = -1
                                         reset_feedback()
+                                else:
+                                    print("\nImport cancelled.")
+
+                            elif b_name == 'export':
+                                if region_grid:
+                                    annotated_sbn = encode_to_sbn(region_grid, stars_per_region, player_grid)
+                                    annotation_str = encode_player_annotations(player_grid)
+                                    annotated_web_task = puzzle_data['task'] + annotation_str
+                                    
+                                    print("\n" + "="*50)
+                                    print("EXPORTED PUZZLE STRINGS (with current marks)")
+                                    print(f"  -> Annotated SBN:      {annotated_sbn}")
+                                    print(f"  -> Annotated Web Task: {annotated_web_task}")
+                                    print("="*50)
                                         
-                            # Handle Board Clearing
                             elif b_name == 'clear':
                                 player_grid = [[STATE_EMPTY] * current_grid_dim for _ in range(current_grid_dim)]
                                 reset_feedback()
                                 
-                            # Handle Mark Toggling
                             elif b_name == 'toggle':
                                 mark_is_x = not mark_is_x
                                 
-                            # Handle Solution Check
                             elif b_name == 'check':
                                 is_correct = check_solution(player_grid, puzzle_data)
                                 solution_status = "Correct!" if is_correct else "Incorrect!"
                                 feedback_overlay_color = COLOR_CORRECT if is_correct else COLOR_INCORRECT
                                 feedback_overlay_alpha = 128
                                 
-                            # Handle Z3 Solver (Full uniqueness check restored)
                             elif b_name == 'find':
                                 print("\n" + "="*40 + "\n--- Finding solution with Z3 Solver... ---")
                                 solver = Z3StarBattleSolver(region_grid, stars_per_region)
@@ -718,35 +692,48 @@ def main():
                                 solutions, _ = solver.solve()
                                 duration = time.monotonic() - start_time
                                 num_solutions = len(solutions)
+                                
                                 if num_solutions == 0:
                                     print("RESULT: No solution found.")
-                                elif num_solutions == 1:
-                                    print("RESULT: Found 1 unique solution.")
-                                    validate_solver_solution_with_hash(solutions[0], puzzle_data)
-                                    display_terminal_grid(region_grid, "Unique Solution", solutions[0])
                                 else:
-                                    print("RESULT: Multiple solutions exist. Found at least 2.")
+                                    if num_solutions == 1:
+                                        print("RESULT: Found 1 unique solution.")
+                                    else:
+                                        print(f"RESULT: Multiple solutions exist. Found at least {num_solutions}.")
+
                                     validate_solver_solution_with_hash(solutions[0], puzzle_data)
                                     display_terminal_grid(region_grid, "Solution 1", solutions[0])
-                                    validate_solver_solution_with_hash(solutions[1], puzzle_data)
-                                    display_terminal_grid(region_grid, "Solution 2", solutions[1])
+                                    if num_solutions > 1:
+                                        display_terminal_grid(region_grid, "Solution 2", solutions[1])
+
+                                    # Export the first found solution
+                                    solution_grid_export = [[STATE_STAR if cell == 1 else STATE_EMPTY for cell in row] for row in solutions[0]]
+                                    annotated_sbn = encode_to_sbn(region_grid, stars_per_region, solution_grid_export)
+                                    annotation_str = encode_player_annotations(solution_grid_export)
+                                    annotated_web_task = puzzle_data['task'] + annotation_str
+                                    
+                                    print("\n" + "="*50)
+                                    print("EXPORTED SOLVER SOLUTION")
+                                    print(f"  -> Annotated SBN:      {annotated_sbn}")
+                                    print(f"  -> Annotated Web Task: {annotated_web_task}")
+                                    print("="*50)
+
                                 print(f"Solve time: {format_duration(duration)}\n" + "="*40 + "\n")
                             break
                             
-                    # Handle grid interaction (placing marks by clicking/dragging)
                     if not clicked_on_button and pos[0] < GRID_AREA_WIDTH:
                         col, row = int(pos[0] // cell_size), int(pos[1] // cell_size)
                         if 0 <= row < current_grid_dim and 0 <= col < current_grid_dim:
                              is_left_down, is_dragging, click_cell = True, False, (row, col)
                 
-                elif event.button == 3 and pos[0] < GRID_AREA_WIDTH: # Right Click for stars
+                elif event.button == 3 and pos[0] < GRID_AREA_WIDTH:
                     col, row = int(pos[0] // cell_size), int(pos[1] // cell_size)
                     if 0 <= row < current_grid_dim and 0 <= col < current_grid_dim:
                         player_grid[row][col] = STATE_EMPTY if player_grid[row][col] == STATE_STAR else STATE_STAR
                         reset_feedback()
             
             elif event.type == pygame.MOUSEMOTION:
-                if is_left_down: # Dragging to place secondary marks
+                if is_left_down:
                     is_dragging = True
                     col, row = int(event.pos[0] // cell_size), int(event.pos[1] // cell_size)
                     if 0 <= row < current_grid_dim and 0 <= col < current_grid_dim:
@@ -756,7 +743,7 @@ def main():
             
             elif event.type == pygame.MOUSEBUTTONUP:
                 if event.button == 1:
-                    if not is_dragging and click_cell: # Simple click to cycle marks
+                    if not is_dragging and click_cell:
                         row, col = click_cell
                         state = player_grid[row][col]
                         if state == STATE_EMPTY: player_grid[row][col] = STATE_SECONDARY_MARK
@@ -765,7 +752,6 @@ def main():
                         reset_feedback()
                     is_left_down, is_dragging, click_cell = False, False, None
         
-        # --- Drawing Frame ---
         screen.fill(COLOR_PANEL)
         if region_grid:
             draw_background_colors(screen, region_grid, cell_size)
@@ -784,3 +770,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
