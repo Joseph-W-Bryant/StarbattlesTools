@@ -11,7 +11,8 @@ from constants import (
     COLOR_BLACK, COLOR_STAR, COLOR_X, COLOR_DOT, COLOR_PANEL, COLOR_BUTTON,
     COLOR_BUTTON_HOVER, COLOR_BUTTON_TEXT, COLOR_CORRECT, COLOR_INCORRECT,
     COLOR_SELECTED, COLOR_STAR_NUM, DIFFICULTY_COLORS, STATE_STAR,
-    STATE_SECONDARY_MARK, PUZZLE_DEFINITIONS, COLOR_DISABLED_BUTTON, COLOR_DISABLED_TEXT
+    STATE_SECONDARY_MARK, PUZZLE_DEFINITIONS, COLOR_DISABLED_BUTTON, 
+    COLOR_DISABLED_TEXT, DRAWING_COLORS
 )
 
 def get_input_from_console():
@@ -70,13 +71,36 @@ def build_panel_from_layout(layout_def, fonts):
         
         if elem_type == 'button_group':
             group_width = PANEL_WIDTH - (h_padding * 2)
-            current_x = h_padding
-            for i, btn_def in enumerate(element_def['items']):
-                btn_width = (group_width * btn_def['width_ratio']) - (5 * (len(element_def['items']) - 1))
-                rect = pygame.Rect(GRID_AREA_WIDTH + current_x, current_y, btn_width, scaled_elem_height)
+            items = element_def['items']
+            num_buttons = len(items)
+            spacing = 10
+            
+            # Corrected logic to ensure buttons fill the panel width while respecting ratios and spacing
+            width_available_for_buttons = group_width - ((num_buttons - 1) * spacing)
+            current_x = GRID_AREA_WIDTH + h_padding
+
+            for btn_def in items:
+                btn_width = width_available_for_buttons * btn_def['width_ratio']
+                rect = pygame.Rect(current_x, current_y, btn_width, scaled_elem_height)
                 font = fonts.get(btn_def.get('font'), fonts['default'])
-                ui_elements[btn_def['id']] = Button(rect, btn_def['text'], btn_def['id'], font, default_colors)
-                current_x += btn_width + 10
+                
+                # Logic for creating color swatch buttons
+                if btn_def['id'].startswith('color_'):
+                    color_index = ['r', 'b', 'y', 'g'].index(btn_def['id'][-1])
+                    # Use the opaque RGB part of the color for the button's appearance
+                    opaque_color = DRAWING_COLORS[color_index][:3]
+                    custom_colors = {
+                        'base': opaque_color,
+                        'hover': tuple(min(c + 30, 255) for c in opaque_color), # Brighter on hover
+                        'text': COLOR_BUTTON_TEXT, # Not used since text is empty
+                        'disabled_bg': COLOR_DISABLED_BUTTON, 
+                        'disabled_fg': COLOR_DISABLED_TEXT
+                    }
+                    ui_elements[btn_def['id']] = Button(rect, '', btn_def['id'], font, custom_colors)
+                else:
+                    ui_elements[btn_def['id']] = Button(rect, btn_def['text'], btn_def['id'], font, default_colors)
+
+                current_x += btn_width + spacing
             current_y += scaled_elem_height + actual_gap_height
             
         elif elem_type == 'button':
@@ -112,21 +136,24 @@ def build_panel_from_layout(layout_def, fonts):
             
     return ui_elements
 
-def draw_control_panel(screen, fonts, ui_elements, current_size_selection, mark_is_x, solution_status, z3_available, history_manager):
+def draw_control_panel(screen, fonts, ui_elements, current_size_selection, mark_is_x, solution_status, z3_available, history_manager, is_draw_mode, current_color_index):
     """Draws the entire right-side control panel."""
     pygame.draw.rect(screen, COLOR_PANEL, (GRID_AREA_WIDTH, 0, PANEL_WIDTH, WINDOW_HEIGHT))
     mouse_pos = pygame.mouse.get_pos()
 
+    # Draw all buttons
     for name, elem in ui_elements.items():
         if isinstance(elem, Button):
-            if name == 'toggle':
-                elem.text = "Xs" if mark_is_x else "Dots"
+            if name == 'toggle': elem.text = "Xs" if mark_is_x else "Dots"
+            if name == 'toggle_mode': elem.text = "Mark Mode" if is_draw_mode else "Draw Mode"
+            if name == 'clear': elem.text = "Clear"
             
             elem.is_disabled = (name in ['find', 'check'] and not z3_available) or \
-                               (name == 'back' and not history_manager.can_undo()) or \
-                               (name == 'forward' and not history_manager.can_redo())
+                               (name == 'back' and (not history_manager.can_undo() or is_draw_mode)) or \
+                               (name == 'forward' and (not history_manager.can_redo() or is_draw_mode))
             elem.draw(screen)
 
+    # Draw non-button elements
     if 'size_title' in ui_elements:
         title_def = ui_elements['size_title']
         title_surf = fonts['default'].render(title_def['text'], True, COLOR_BUTTON_TEXT)
@@ -145,6 +172,15 @@ def draw_control_panel(screen, fonts, ui_elements, current_size_selection, mark_
             num_surf = fonts['small'].render(str(puzzle_def['dim']), True, COLOR_BUTTON_TEXT)
             screen.blit(num_surf, num_surf.get_rect(center=b['rect'].center))
             draw_star_indicator(screen, b['rect'], puzzle_def['stars'], fonts['tiny'])
+            
+    # Highlight the selected color button if in draw mode
+    if is_draw_mode:
+        color_button_ids = ['color_r', 'color_b', 'color_y', 'color_g']
+        selected_button_id = color_button_ids[current_color_index]
+        if selected_button_id in ui_elements:
+            selected_rect = ui_elements[selected_button_id].rect
+            pygame.draw.rect(screen, COLOR_SELECTED, selected_rect, 3, border_radius=8)
+
 
     if solution_status:
         bottom_button_y = WINDOW_HEIGHT - 45 - 15 - 45 - 15 
@@ -154,7 +190,7 @@ def draw_control_panel(screen, fonts, ui_elements, current_size_selection, mark_
         screen.blit(status_surf, status_rect)
 
 
-# --- UNCHANGED DRAWING HELPER FUNCTIONS ---
+# --- DRAWING HELPER FUNCTIONS ---
 
 def calculate_star_points(center_x, center_y, outer_radius, inner_radius):
     points = [];
@@ -209,6 +245,11 @@ def draw_player_marks(screen, player_grid, mark_is_x, cell_size):
                     pygame.draw.line(screen, COLOR_X, ((c+1) * cell_size - margin, r * cell_size + margin), (c * cell_size + margin, (r+1) * cell_size - margin), line_width)
                 else:
                     pygame.draw.circle(screen, COLOR_DOT, (center_x, center_y), cell_size / 6)
+
+def draw_user_surface(screen, surface):
+    """Blits the transparent user drawing surface onto the main screen."""
+    if surface:
+        screen.blit(surface, (0, 0))
 
 def draw_feedback_overlay(screen, color, alpha):
     if alpha > 0:

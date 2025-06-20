@@ -29,6 +29,14 @@ COLOR_STAR_NUM = (200, 0, 0)
 COLOR_DISABLED_BUTTON = (60, 60, 70)
 COLOR_DISABLED_TEXT = (100, 100, 110)
 
+# --- Drawing Mode Colors (with alpha for transparency) ---
+COLOR_DRAW_RED = (255, 0, 0, 160)
+COLOR_DRAW_BLUE = (0, 0, 255, 160)
+# Updated yellow to be more of a goldenrod/orangey-yellow
+COLOR_DRAW_YELLOW = (255, 215, 0, 160) 
+COLOR_DRAW_GREEN = (0, 200, 0, 160)
+DRAWING_COLORS = [COLOR_DRAW_RED, COLOR_DRAW_BLUE, COLOR_DRAW_YELLOW, COLOR_DRAW_GREEN]
+
 DIFFICULTY_COLORS = {
     'easy':   {'base': (70, 160, 70),  'hover': (90, 190, 90)},
     'medium': {'base': (180, 140, 50), 'hover': (210, 170, 70)},
