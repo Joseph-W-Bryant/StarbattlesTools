@@ -1,0 +1,4 @@
+SeperatedMain/saved_puzzles.txt
+SeperatedMain/__pycache__/
+*.py[cod]
+*$py.class
