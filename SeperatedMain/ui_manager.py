@@ -31,7 +31,6 @@ def build_panel_from_layout(layout_def, fonts):
     """Constructs a list of UI element objects based on a flexible, proportional layout."""
     ui_elements = {}
     
-    # --- Step 1: Calculate ideal height for flowing and fixed elements ---
     ideal_flowing_height = 0
     num_gaps = -1 
     
@@ -46,9 +45,7 @@ def build_panel_from_layout(layout_def, fonts):
     bottom_buttons = [elem for elem in layout_def if 'fixed_bottom' in elem]
     total_bottom_height = sum(b.get('ideal_height', 45) + 15 for b in bottom_buttons)
 
-    # --- Step 2: Calculate available space and the scaling factor ---
     top_padding = 15
-    # *** FIX: Add a guaranteed final buffer between flowing and fixed elements ***
     final_buffer = 15 
     
     available_space = WINDOW_HEIGHT - top_padding - total_bottom_height - final_buffer
@@ -59,7 +56,6 @@ def build_panel_from_layout(layout_def, fonts):
     else:
         actual_gap_height = ideal_gap_height * scaling_factor
         
-    # --- Step 3: Build the flowing UI elements ---
     current_y = top_padding
     h_padding = 15
     
@@ -107,7 +103,6 @@ def build_panel_from_layout(layout_def, fonts):
             ui_elements[element_def['id']] = size_buttons
             current_y += scaled_elem_height + actual_gap_height
             
-    # --- Step 4: Build the fixed bottom buttons, placing them from the bottom up ---
     current_bottom_y = WINDOW_HEIGHT - 15
     for btn_def in reversed(bottom_buttons):
         height = btn_def.get('ideal_height', 45)
@@ -118,7 +113,7 @@ def build_panel_from_layout(layout_def, fonts):
     return ui_elements
 
 def draw_control_panel(screen, fonts, ui_elements, current_size_selection, mark_is_x, solution_status, z3_available, history_manager):
-    """Draws the entire right-side control panel using the generated UI elements."""
+    """Draws the entire right-side control panel."""
     pygame.draw.rect(screen, COLOR_PANEL, (GRID_AREA_WIDTH, 0, PANEL_WIDTH, WINDOW_HEIGHT))
     mouse_pos = pygame.mouse.get_pos()
 
