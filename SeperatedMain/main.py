@@ -49,6 +49,7 @@ def main():
             {'id': 'forward', 'text': 'Redo', 'width_ratio': 0.5}
         ]},
         {'type': 'button', 'id': 'toggle_mode', 'text': 'Draw Mode', 'ideal_height': 45},
+        {'type': 'button', 'id': 'border_mode', 'text': 'Add Border', 'ideal_height': 45},
         {'type': 'button_group', 'ideal_height': 45, 'items': [
             {'id': 'color_r', 'text': '', 'width_ratio': 0.25},
             {'id': 'color_b', 'text': '', 'width_ratio': 0.25},
@@ -64,7 +65,6 @@ def main():
     # --- INITIAL GAME STATE SETUP ---
     initial_puzzle_data = pz.get_puzzle_from_website(5) # Default to size_id 5
     if initial_puzzle_data:
-        # The website puzzle data doesn't contain the star count, so we add it from our constants
         initial_puzzle_data['stars'] = const.PUZZLE_DEFINITIONS[5]['stars']
     else:
         print("Failed to load initial puzzle. Exiting."); sys.exit(1)
@@ -84,6 +84,7 @@ def main():
         'back': actions.handle_undo,
         'forward': actions.handle_redo,
         'toggle_mode': actions.handle_toggle_mode,
+        'border_mode': actions.handle_toggle_border_mode,
         'check': actions.handle_check_solution,
         'find': actions.handle_find_solution,
     }
@@ -97,35 +98,29 @@ def main():
                 running = False
                 break
 
-            # Check for button clicks first
             action = None
             for name, elem in game_state.ui_elements.items():
                 if isinstance(elem, Button) and elem.handle_event(event):
                     action = name
                     break
             
-            # Dispatch to mapped action handler if a button was clicked
             if action in action_map:
                 action_map[action](game_state)
                 continue
 
-            # Handle non-mapped UI element interactions that require a MOUSEBUTTONDOWN event
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 pos = event.pos
-                # Size selector grid
                 size_buttons = game_state.ui_elements.get('size_selector', {})
                 if size_buttons:
                     for size_id, b_data in size_buttons.items():
                         if b_data['rect'].collidepoint(pos):
                             actions.handle_select_size(game_state, size_id)
-                            break # Found the clicked size, no need to check others
+                            break
                 
-                # Color selector swatches (check if an action ID for a color button was found)
                 color_map = {'color_r': 0, 'color_b': 1, 'color_y': 2, 'color_g': 3}
                 if action in color_map:
                     actions.handle_select_color(game_state, color_map[action])
 
-            # Handle direct grid and drawing input (now safely filtered)
             handle_mouse_input(event, game_state)
 
         if not running: break
@@ -139,44 +134,84 @@ def main():
 
 def handle_mouse_input(event, game_state):
     """Processes all direct mouse interactions with the grid."""
-    # --- ADDED GUARD ---
-    # Only proceed for events that have a 'pos' attribute.
     if event.type not in [pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP, pygame.MOUSEMOTION]:
         return
 
     pos = event.pos
     if pos[0] >= const.GRID_AREA_WIDTH:
-        return # Mouse is over the control panel, ignore grid input
+        return
 
-    # --- MOUSE BUTTON DOWN ---
-    if event.type == pygame.MOUSEBUTTONDOWN:
-        if event.button == 1: game_state.is_left_down = True
-        if event.button == 3: game_state.is_right_down = True
+    # --- BORDER MODE LOGIC (REFACTORED TO FIX CRASH) ---
+    if game_state.is_border_mode:
+        col = int(pos[0] // game_state.cell_size)
+        row = int(pos[1] // game_state.cell_size)
         
-        if game_state.is_draw_mode:
-            game_state.last_pos = pos
-        else: # Mark Mode
-            col = int(pos[0] // game_state.cell_size)
-            row = int(pos[1] // game_state.cell_size)
-            if 0 <= row < game_state.grid_dim and 0 <= col < game_state.grid_dim:
-                if event.button == 1: # Left click (for single click or drag start)
-                    game_state.is_dragging = False
-                    game_state.click_cell = (row, col)
-                elif event.button == 3: # Right click (place star)
-                    from_state = game_state.player_grid[row][col]
-                    to_state = const.STATE_EMPTY if from_state == const.STATE_STAR else const.STATE_STAR
-                    game_state.add_player_grid_change(row, col, from_state, to_state)
+        # Handle mouse button down events
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 1: # Left-click to start drawing
+                game_state.is_left_down = True
+                game_state.current_border_path = {(row, col)}
+            elif event.button == 3: # Right-click to start erasing
+                game_state.is_right_down = True
+                borders_to_keep = [shape for shape in game_state.custom_borders if (row, col) not in shape]
+                game_state.custom_borders = borders_to_keep
+        
+        # Handle mouse movement (dragging)
+        elif event.type == pygame.MOUSEMOTION:
+            if game_state.is_left_down: # Dragging to draw
+                if 0 <= row < game_state.grid_dim and 0 <= col < game_state.grid_dim:
+                    game_state.current_border_path.add((row, col))
+            elif game_state.is_right_down: # Dragging to erase
+                borders_to_keep = [shape for shape in game_state.custom_borders if (row, col) not in shape]
+                game_state.custom_borders = borders_to_keep
+        
+        # Handle mouse button up events
+        elif event.type == pygame.MOUSEBUTTONUP:
+            if event.button == 1: # Left-click released
+                game_state.is_left_down = False
+                if game_state.current_border_path:
+                    game_state.custom_borders.append(game_state.current_border_path)
+                game_state.current_border_path = set()
+            elif event.button == 3: # Right-click released
+                game_state.is_right_down = False
+        return
 
-    # --- MOUSE MOTION ---
-    elif event.type == pygame.MOUSEMOTION:
-        if game_state.is_draw_mode and (game_state.is_left_down or game_state.is_right_down):
-            color = const.DRAWING_COLORS[game_state.current_color_index] if game_state.is_left_down else (0,0,0,0) # Right click is eraser
-            current_brush_size = game_state.brush_size if game_state.is_left_down else game_state.brush_size * 3
+    # --- DRAW MODE LOGIC ---
+    if game_state.is_draw_mode:
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 1: game_state.is_left_down = True
+            if event.button == 3: game_state.is_right_down = True
+            game_state.last_pos = pos
+        elif event.type == pygame.MOUSEMOTION and (game_state.is_left_down or game_state.is_right_down):
+            color = const.DRAWING_COLORS[game_state.current_color_index] if game_state.is_left_down else (0,0,0,0)
+            current_brush_size = game_state.brush_size if game_state.is_left_down else game_state.brush_size * 6
             if game_state.last_pos is not None:
                 pygame.draw.line(game_state.draw_surface, color, game_state.last_pos, pos, current_brush_size * 2 + 1)
             pygame.draw.circle(game_state.draw_surface, color, pos, current_brush_size)
             game_state.last_pos = pos
-        elif not game_state.is_draw_mode and game_state.is_left_down: # Dragging in Mark Mode
+        elif event.type == pygame.MOUSEBUTTONUP:
+            if event.button == 1: game_state.is_left_down = False
+            if event.button == 3: game_state.is_right_down = False
+            game_state.last_pos = None
+        return
+
+    # --- MARK MODE LOGIC ---
+    if event.type == pygame.MOUSEBUTTONDOWN:
+        if event.button == 1: game_state.is_left_down = True
+        if event.button == 3: game_state.is_right_down = True
+        col = int(pos[0] // game_state.cell_size)
+        row = int(pos[1] // game_state.cell_size)
+        if 0 <= row < game_state.grid_dim and 0 <= col < game_state.grid_dim:
+            if event.button == 1:
+                game_state.is_dragging = False
+                game_state.click_cell = (row, col)
+            elif event.button == 3:
+                from_state = game_state.player_grid[row][col]
+                to_state = const.STATE_EMPTY if from_state == const.STATE_STAR else const.STATE_STAR
+                game_state.add_player_grid_change(row, col, from_state, to_state)
+
+    elif event.type == pygame.MOUSEMOTION:
+        if game_state.is_left_down:
             game_state.is_dragging = True
             col = int(pos[0] // game_state.cell_size)
             row = int(pos[1] // game_state.cell_size)
@@ -185,14 +220,11 @@ def handle_mouse_input(event, game_state):
                 if from_state != const.STATE_SECONDARY_MARK:
                     game_state.add_player_grid_change(row, col, from_state, const.STATE_SECONDARY_MARK)
 
-    # --- MOUSE BUTTON UP ---
     elif event.type == pygame.MOUSEBUTTONUP:
         if event.button == 1: game_state.is_left_down = False
         if event.button == 3: game_state.is_right_down = False
         
-        if game_state.is_draw_mode:
-            game_state.last_pos = None
-        elif not game_state.is_dragging and game_state.click_cell and event.button == 1: # Single left click in Mark Mode
+        if not game_state.is_dragging and game_state.click_cell and event.button == 1:
             row, col = game_state.click_cell
             from_state = game_state.player_grid[row][col]
             click_cycle_map = {

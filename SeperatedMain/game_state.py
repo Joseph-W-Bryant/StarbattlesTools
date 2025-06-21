@@ -18,7 +18,7 @@ class GameState:
         self.current_size_selection = 5
         self.screen = pygame.display.set_mode((const.WINDOW_WIDTH, const.WINDOW_HEIGHT))
         
-        # Initialize core puzzle components
+        # Core puzzle components
         self.puzzle_data = {}
         self.region_grid = None
         self.player_grid = None
@@ -27,21 +27,29 @@ class GameState:
         self.stars_per_region = 0
         self.history = HistoryManager([[]]) # Dummy init
 
-        # UI and Interaction State
+        # Drawing Mode
         self.is_draw_mode = False
         self.draw_surface = pygame.Surface((const.GRID_AREA_WIDTH, const.GRID_AREA_HEIGHT), pygame.SRCALPHA)
         self.current_color_index = 0
         self.brush_size = 3
         self.last_pos = None
 
+        # --- NEW: Border Mode (Free-form) ---
+        self.is_border_mode = False
+        self.custom_borders = [] # List of sets, where each set contains (r, c) tuples for a shape
+        self.current_border_path = set() # Holds the (r,c) tuples for the border being drawn
+
+        # General State
         self.mark_is_x = True
         self.solution_status = None
         self.feedback_overlay_alpha = 0
         self.feedback_overlay_color = const.COLOR_CORRECT
         
-        # Mouse Dragging State
+        # Mouse Button State (used by multiple modes)
         self.is_left_down = False
         self.is_right_down = False
+        
+        # Mark Mode Specific State
         self.is_dragging = False
         self.click_cell = None
         
@@ -62,7 +70,6 @@ class GameState:
             return
 
         self.puzzle_data = puzzle_data
-        # This first call correctly sets self.player_grid if annotations were decoded
         (self.region_grid, _, self.player_grid, self.grid_dim, 
          self.cell_size, self.stars_per_region) = pz.reset_game_state(puzzle_data)
 
@@ -70,22 +77,20 @@ class GameState:
             print("Failed to load puzzle from data. State not reset.")
             return
             
-        # --- CORRECTED LOGIC ---
-        # Get the history manager if it was successfully deserialized
         restored_manager = puzzle_data.get('history_manager')
 
         if restored_manager:
-            # Case 1: We have history data. This is the source of truth.
-            # The manager was already initialized with a blank grid of the correct size.
             self.history = restored_manager
             self.player_grid = self.history.get_current_grid()
         else:
-            # Case 2: No history data was imported.
-            # The `self.player_grid` (from annotations or blank) is the correct starting state.
-            # Initialize the history manager with this grid as its base state.
             self.history = HistoryManager(self.player_grid)
 
-        self.draw_surface.fill((0, 0, 0, 0)) # Clear drawings on new puzzle
+        # Clear all temporary user visuals and modes
+        self.draw_surface.fill((0, 0, 0, 0))
+        self.custom_borders = []
+        self.current_border_path = set()
+        self.is_draw_mode = False
+        self.is_border_mode = False
         self.reset_feedback()
         print(f"Game state reset for a {self.grid_dim}x{self.grid_dim} puzzle.")
 

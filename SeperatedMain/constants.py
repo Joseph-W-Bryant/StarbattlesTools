@@ -10,6 +10,8 @@ WINDOW_HEIGHT = GRID_AREA_HEIGHT
 GUTTER = 5
 BORDER_NORMAL = 1
 BORDER_THICK = 4
+# --- NEW: Custom border thickness ---
+BORDER_CUSTOM_THICKNESS = 8
 
 # --- Colors ---
 COLOR_WHITE = (255, 255, 255)
@@ -28,11 +30,12 @@ COLOR_SELECTED = (100, 180, 255)
 COLOR_STAR_NUM = (200, 0, 0)
 COLOR_DISABLED_BUTTON = (60, 60, 70)
 COLOR_DISABLED_TEXT = (100, 100, 110)
+# --- NEW: Bolder, richer yellow/gold color ---
+COLOR_CUSTOM_BORDER = (255, 204, 0) # A bold, rich gold/yellow
 
 # --- Drawing Mode Colors (with alpha for transparency) ---
 COLOR_DRAW_RED = (255, 0, 0, 160)
 COLOR_DRAW_BLUE = (0, 0, 255, 160)
-# Updated yellow to be more of a goldenrod/orangey-yellow
 COLOR_DRAW_YELLOW = (255, 215, 0, 160) 
 COLOR_DRAW_GREEN = (0, 200, 0, 160)
 DRAWING_COLORS = [COLOR_DRAW_RED, COLOR_DRAW_BLUE, COLOR_DRAW_YELLOW, COLOR_DRAW_GREEN]

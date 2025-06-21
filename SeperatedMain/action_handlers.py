@@ -16,42 +16,33 @@ def handle_new_puzzle(game_state):
     Loads a new puzzle from the website based on the current size selection.
     If no size is selected (e.g., after an import), it defaults to 10x10 medium.
     """
-    # --- MODIFIED LOGIC ---
     size_to_fetch = game_state.current_size_selection
     if size_to_fetch == -1:
         print("No size selected, defaulting to 10x10 Medium (ID: 5).")
-        size_to_fetch = 5 # ID 5 corresponds to 10x10 Medium puzzle
+        size_to_fetch = 5
 
     print(f"\nRequesting new puzzle for size ID: {size_to_fetch}")
     new_puzzle_data = pz.get_puzzle_from_website(size_to_fetch)
 
     if new_puzzle_data:
-        # Add stars info which isn't included in the web fetch
         new_puzzle_data['stars'] = const.PUZZLE_DEFINITIONS[size_to_fetch]['stars']
-        
-        # Update the game state with the new puzzle
         game_state.reset_puzzle_state(new_puzzle_data)
-        
-        # Update the selection state to match the puzzle we just loaded
         game_state.current_size_selection = size_to_fetch
 
 def handle_save(game_state):
     """Saves the current puzzle state, including history, to a file."""
     comment = ui.get_comment_from_console()
     pz.save_puzzle_entry(game_state.puzzle_data, game_state.player_grid, game_state.history, comment)
-    # Restore the screen after console input
     game_state.screen = pygame.display.set_mode((const.WINDOW_WIDTH, const.WINDOW_HEIGHT))
 
 def handle_import(game_state):
     """Imports a puzzle from a user-provided string."""
     input_string = ui.get_input_from_console()
-    # Restore the screen after console input
     game_state.screen = pygame.display.set_mode((const.WINDOW_WIDTH, const.WINDOW_HEIGHT))
     if input_string:
         new_puzzle_data = pz.universal_import(input_string)
         if new_puzzle_data:
             game_state.reset_puzzle_state(new_puzzle_data)
-            # An imported puzzle does not correspond to a size selection button
             game_state.current_size_selection = -1
     else:
         print("\nImport cancelled.")
@@ -73,9 +64,11 @@ def handle_export(game_state):
               f"  -> Web Task: {web_task_export}\n" + "="*50)
 
 def handle_clear(game_state):
-    """Clears either the drawing surface or the player marks."""
+    """Clears either drawings, borders, or player marks depending on the current mode."""
     if game_state.is_draw_mode:
         game_state.draw_surface.fill((0, 0, 0, 0))
+    elif game_state.is_border_mode:
+        game_state.custom_borders = []
     else:
         initial_grid = [[const.STATE_EMPTY] * game_state.grid_dim for _ in range(game_state.grid_dim)]
         game_state.history.reset(initial_grid)
@@ -88,6 +81,16 @@ def handle_toggle_mark_type(game_state):
 def handle_toggle_mode(game_state):
     """Toggles between marking mode and drawing mode."""
     game_state.is_draw_mode = not game_state.is_draw_mode
+    # Ensure other modes are off when entering draw mode
+    if game_state.is_draw_mode:
+        game_state.is_border_mode = False
+
+def handle_toggle_border_mode(game_state):
+    """Toggles between marking mode and border drawing mode."""
+    game_state.is_border_mode = not game_state.is_border_mode
+    # Ensure other modes are off when entering border mode
+    if game_state.is_border_mode:
+        game_state.is_draw_mode = False
 
 def handle_undo(game_state):
     """Undoes the last action."""
@@ -125,7 +128,6 @@ def handle_check_solution(game_state):
     else:
         game_state.solution_status = "Incorrect!"
     
-    # Perform secondary hash validation if the solution is correct and hash is available
     if is_correct and game_state.puzzle_data.get('solution_hash'):
         print("--- Performing secondary hash validation ---")
         pz.check_solution(game_state.player_grid, game_state.puzzle_data)

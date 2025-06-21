@@ -4,8 +4,6 @@
 import pygame
 import math
 from ui_elements import Button
-# --- CORRECTED IMPORT ---
-# Z3_AVAILABLE is imported from its source in z3_solver, not constants.
 from z3_solver import Z3_AVAILABLE
 
 from constants import (
@@ -15,7 +13,8 @@ from constants import (
     COLOR_BUTTON_HOVER, COLOR_BUTTON_TEXT, COLOR_CORRECT, COLOR_INCORRECT,
     COLOR_SELECTED, COLOR_STAR_NUM, DIFFICULTY_COLORS, STATE_STAR,
     STATE_SECONDARY_MARK, PUZZLE_DEFINITIONS, COLOR_DISABLED_BUTTON, 
-    COLOR_DISABLED_TEXT, DRAWING_COLORS
+    COLOR_DISABLED_TEXT, DRAWING_COLORS, COLOR_CUSTOM_BORDER, 
+    BORDER_CUSTOM_THICKNESS
 )
 
 # --- Console Interaction ---
@@ -41,6 +40,7 @@ def draw_game(game_state):
     
     if game_state.region_grid:
         draw_background_colors(game_state.screen, game_state.region_grid, game_state.cell_size)
+        draw_custom_borders(game_state)
         draw_grid_lines(game_state.screen, game_state.region_grid, game_state.cell_size)
         draw_user_surface(game_state.screen, game_state.draw_surface)
         draw_player_marks(game_state.screen, game_state.player_grid, game_state.mark_is_x, game_state.cell_size)
@@ -64,20 +64,17 @@ def draw_control_panel(game_state):
     pygame.draw.rect(screen, COLOR_PANEL, (GRID_AREA_WIDTH, 0, PANEL_WIDTH, WINDOW_HEIGHT))
     mouse_pos = pygame.mouse.get_pos()
 
-    # Draw all buttons, updating their state from the game_state
     for name, elem in ui_elements.items():
         if isinstance(elem, Button):
-            # Update dynamic button text
             if name == 'toggle': elem.text = "Xs" if game_state.mark_is_x else "Dots"
             if name == 'toggle_mode': elem.text = "Mark Mode" if game_state.is_draw_mode else "Draw Mode"
-            
-            # Update disabled state
+            if name == 'border_mode': elem.text = "Mark Mode" if game_state.is_border_mode else "Add Border"
+
             elem.is_disabled = (name in ['find', 'check'] and not Z3_AVAILABLE) or \
-                               (name == 'back' and (not game_state.history.can_undo() or game_state.is_draw_mode)) or \
-                               (name == 'forward' and (not game_state.history.can_redo() or game_state.is_draw_mode))
+                               (name == 'back' and (not game_state.history.can_undo() or game_state.is_draw_mode or game_state.is_border_mode)) or \
+                               (name == 'forward' and (not game_state.history.can_redo() or game_state.is_draw_mode or game_state.is_border_mode))
             elem.draw(screen)
 
-    # Draw non-button elements
     if 'size_title' in ui_elements:
         title_def = ui_elements['size_title']
         title_surf = fonts['default'].render(title_def['text'], True, COLOR_BUTTON_TEXT)
@@ -97,7 +94,6 @@ def draw_control_panel(game_state):
             screen.blit(num_surf, num_surf.get_rect(center=b['rect'].center))
             draw_star_indicator(screen, b['rect'], puzzle_def['stars'], fonts['tiny'])
             
-    # Highlight the selected color button if in draw mode
     if game_state.is_draw_mode:
         color_button_ids = ['color_r', 'color_b', 'color_y', 'color_g']
         selected_button_id = color_button_ids[game_state.current_color_index]
@@ -105,9 +101,11 @@ def draw_control_panel(game_state):
             selected_rect = ui_elements[selected_button_id].rect
             pygame.draw.rect(screen, COLOR_SELECTED, selected_rect, 3, border_radius=8)
 
-    # Display solution status text
+    if game_state.is_border_mode and 'border_mode' in ui_elements:
+        selected_rect = ui_elements['border_mode'].rect
+        pygame.draw.rect(screen, COLOR_SELECTED, selected_rect, 3, border_radius=8)
+
     if game_state.solution_status:
-        # Position status text above the bottom two buttons
         bottom_button_y = WINDOW_HEIGHT - 45 - 15 - 45 - 15 
         color = COLOR_CORRECT if "Correct" in game_state.solution_status else COLOR_INCORRECT
         status_surf = fonts['default'].render(game_state.solution_status, True, color)
@@ -115,14 +113,10 @@ def draw_control_panel(game_state):
         screen.blit(status_surf, status_rect)
 
 
-# [ The build_panel_from_layout function and drawing helpers (draw_background_colors, 
-#   draw_grid_lines, etc.) remain unchanged as their logic is independent of game state structure. ]
-
 def build_panel_from_layout(layout_def, fonts):
     """Constructs a dictionary of UI element objects based on a flexible, proportional layout."""
     ui_elements = {}
     
-    # Calculate available vertical space for flowing elements
     ideal_flowing_height = sum(e.get('ideal_height', 0) for e in layout_def if 'fixed_bottom' not in e)
     num_gaps = len([e for e in layout_def if 'fixed_bottom' not in e and e['type'] != 'title'])
     
@@ -164,7 +158,6 @@ def build_panel_from_layout(layout_def, fonts):
                 rect = pygame.Rect(current_x, current_y, btn_width, scaled_elem_height)
                 font = fonts.get(btn_def.get('font'), fonts['default'])
                 
-                # Special case for color swatch buttons
                 if btn_def['id'].startswith('color_'):
                     color_index = ['r', 'b', 'y', 'g'].index(btn_def['id'][-1])
                     opaque_color = DRAWING_COLORS[color_index][:3]
@@ -203,7 +196,6 @@ def build_panel_from_layout(layout_def, fonts):
             ui_elements[element_def['id']] = size_buttons
             current_y += scaled_elem_height + actual_gap_height
             
-    # Layout fixed bottom buttons
     current_bottom_y = WINDOW_HEIGHT - 15
     for btn_def in reversed(bottom_buttons):
         height = btn_def.get('ideal_height', 45)
@@ -213,7 +205,37 @@ def build_panel_from_layout(layout_def, fonts):
             
     return ui_elements
     
-# --- Drawing Helper Functions (Unchanged) ---
+# --- Drawing Helper Functions ---
+
+# --- NEW: Draws borders inside the cell edges using rectangles ---
+def draw_custom_borders(game_state):
+    """Draws the outer edges of arbitrary shapes defined by sets of cells."""
+    screen = game_state.screen
+    cell_size = game_state.cell_size
+    thickness = BORDER_CUSTOM_THICKNESS
+
+    all_shapes = game_state.custom_borders + [game_state.current_border_path]
+
+    for shape in all_shapes:
+        if not shape:
+            continue
+        for r, c in shape:
+            x = c * cell_size
+            y = r * cell_size
+            
+            # Draw top border if no neighbor above
+            if (r - 1, c) not in shape:
+                pygame.draw.rect(screen, COLOR_CUSTOM_BORDER, (x, y, cell_size, thickness))
+            # Draw bottom border if no neighbor below
+            if (r + 1, c) not in shape:
+                pygame.draw.rect(screen, COLOR_CUSTOM_BORDER, (x, y + cell_size - thickness, cell_size, thickness))
+            # Draw left border if no neighbor to the left
+            if (r, c - 1) not in shape:
+                pygame.draw.rect(screen, COLOR_CUSTOM_BORDER, (x, y, thickness, cell_size))
+            # Draw right border if no neighbor to the right
+            if (r, c + 1) not in shape:
+                pygame.draw.rect(screen, COLOR_CUSTOM_BORDER, (x + cell_size - thickness, y, thickness, cell_size))
+
 
 def calculate_star_points(center_x, center_y, outer_radius, inner_radius):
     """Calculates the vertices for a 5-pointed star polygon."""

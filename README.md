@@ -11,18 +11,13 @@ Star Battle (also known as "Two Not Touch") is a logic puzzle where the objectiv
 ## Features
 
 * **Dynamic Puzzle Loading:** Instantly fetch new puzzles of varying size and difficulty directly from `puzzle-star-battle.com`.
-* **Full Undo/Redo:** Complete session history tracking allows you to undo and redo every move.
-* **Advanced Solver:** Utilizes the Z3 SMT solver to:
-    * **Check Solution:** Instantly verify if your solution is correct.
-    * **Find Solution:** Automatically find a valid solution for the current puzzle.
-* **Robust Import/Export:**
-    * A universal import function that correctly parses both **SBN** and **Web Task** formats.
-    * Handles complex strings containing the base puzzle, player annotations, and full history data.
-    * Export your current session to a portable string.
-* **Save & Load Progress:**
-    * Save your current puzzle, including annotations and history, to a local `saved_puzzles.txt` file with an optional comment.
-    * Import any saved puzzle to continue exactly where you left off.
-* **Draw Mode:** Toggle between the standard marking mode and a freeform drawing mode with multiple colors and an eraser to make notes directly on the grid.
+* **Full Undo/Redo:** Complete session history tracking for marks allows you to undo and redo every placement.
+* **Advanced Solver:** Utilizes the Z3 SMT solver to check your solution or find one automatically.
+* **Robust Import/Export:** A universal import function that correctly parses both **SBN** and **Web Task** formats. Export your current session to a portable string.
+* **Save & Load Progress:** Save your current puzzle, including annotations and history, to a local `saved_puzzles.txt` file.
+* **Annotation Tools:**
+    * **Draw Mode:** Make freeform notes directly on the grid with multiple colors.
+    * **Border Mode:** Draw custom, thick borders around any group of cells to highlight regions of interest.
 * **Intuitive UI:** A clean interface with a dedicated control panel for all major actions.
 
 ## Installation
@@ -60,38 +55,42 @@ pip install z3-solver
 python3 main.py
 ```
 
-## How to Use the Application
+## Controls
 
-### Basic Gameplay
-* **Place a Star:** **Right-click** on an empty cell. Right-click again to remove it.
-* **Place a Secondary Mark (Dot/X):**
-    * **Left-click** on a cell to cycle through the states: Empty -> Mark -> Star -> Empty.
-    * **Left-click and drag** across multiple cells to quickly place secondary marks.
-* **Toggle Mark Type:** Use the "Xs" / "Dots" button on the control panel to switch the appearance of the secondary mark.
+The application has three main interaction modes, which you can switch between using the buttons on the control panel.
 
-### Control Panel
-* **New Puzzle:** Fetches a new puzzle from the web based on the selected size. If no size is selected (e.g., after an import), it defaults to a 10x10 medium puzzle.
-* **Save Puzzle:** Prompts you in the terminal to add a comment, then saves your complete session (puzzle, annotations, and history) to `saved_puzzles.txt`.
-* **Import:** Prompts you in the terminal to paste a puzzle string (either SBN or Web Task format).
-* **Export:** Prints the SBN and Web Task strings for your current session to the terminal.
-* **Clear:** In Mark Mode, this clears all your stars and marks. In Draw Mode, it erases all drawings.
-* **Undo / Redo:** Step backward or forward through your move history.
-* **Draw Mode / Mark Mode:** Toggles between placing puzzle marks and freeform drawing on the grid.
-* **Color Swatches:** When in Draw Mode, select your drawing color. Right-click while drawing to erase.
-* **Board Size Grid:** Select a puzzle size and difficulty. This will immediately fetch a new puzzle.
-* **Find Solution:** Uses the Z3 solver to find and display a valid solution in the terminal.
-* **Check Solution:** Uses the Z3 solver to verify if your current placement of stars is a correct solution. The result ("Correct!" or "Incorrect!") is displayed on the panel.
+### Mark Mode (Default)
 
-### File Structure
+This is the standard mode for solving the puzzle.
 
-The project is organized into several modules to separate concerns:
-* `main.py`: The main entry point of the application. Contains the game loop and event handling logic.
-* `game_state.py`: A centralized class that holds and manages all dynamic state for the application.
-* `action_handlers.py`: Contains the functions that execute when UI buttons are pressed (e.g., `handle_new_puzzle`).
-* `puzzle_handler.py`: Manages all data-heavy logic, including the `universal_import` function and all encoding/decoding for the SBN and Web Task formats.
-* `ui_manager.py`: Responsible for all drawing and rendering logic, including building the control panel and drawing the grid.
-* `ui_elements.py`: Defines UI components, such as the `Button` class.
-* `z3_solver.py`: Contains the `Z3StarBattleSolver` class and all logic related to interacting with the Z3 library.
-* `history_manager.py`: A self-contained class for managing the undo/redo change list.
-* `constants.py`: Stores all static values like colors, dimensions, and UI constants.
+* **Place/Remove a Star:** **Right-click** on a cell to place a star. Right-click the star again to remove it.
+* **Cycle Marks:** **Left-click** on a cell to cycle through the states: Empty -> X -> Star -> Empty.
+* **Quickly Place X's:** **Left-click and drag** across multiple cells to quickly fill them with X marks.
+
+### Add Border Mode
+
+This mode allows you to draw custom, thick yellow borders to highlight regions.
+
+* **Draw a Border:** **Left-click and drag** over a group of cells. The border will form around the outside of the shape you draw.
+* **Erase a Border:** **Right-click and drag** over any part of a custom border to erase the entire shape.
+
+### Draw Mode
+
+This mode allows you to make freeform annotations on top of the grid.
+
+* **Draw:** **Left-click and drag** to draw on the grid using the selected color.
+* **Erase:** **Right-click and drag** to erase your drawings with a large circular eraser.
+
+### Control Panel Buttons
+
+* **New Puzzle:** Fetches a new puzzle from the web based on the selected size.
+* **Save Puzzle:** Prompts you in the terminal to add a comment, then saves your complete session to `saved_puzzles.txt`.
+* **Import/Export:** Import a puzzle from a string or export your current session to the terminal.
+* **Clear:** Clears player marks (Mark Mode), custom borders (Border Mode), or drawings (Draw Mode).
+* **Toggle (Xs/Dots):** Switches the appearance of the secondary mark.
+* **Undo / Redo:** Steps forward or backward through your history of placed marks. (Does not affect drawings or custom borders).
+* **Draw Mode/Add Border/Mark Mode:** Switches between the main interaction modes.
+* **Color Swatches:** In Draw Mode, select your drawing color.
+* **Board Size Grid:** Select a puzzle size and difficulty to fetch a new puzzle.
+* **Find/Check Solution:** Uses the Z3 solver to find a solution or check your current work.
 
