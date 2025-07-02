@@ -81,14 +81,12 @@ def handle_toggle_mark_type(game_state):
 def handle_toggle_mode(game_state):
     """Toggles between marking mode and drawing mode."""
     game_state.is_draw_mode = not game_state.is_draw_mode
-    # Ensure other modes are off when entering draw mode
     if game_state.is_draw_mode:
         game_state.is_border_mode = False
 
 def handle_toggle_border_mode(game_state):
     """Toggles between marking mode and border drawing mode."""
     game_state.is_border_mode = not game_state.is_border_mode
-    # Ensure other modes are off when entering border mode
     if game_state.is_border_mode:
         game_state.is_draw_mode = False
 

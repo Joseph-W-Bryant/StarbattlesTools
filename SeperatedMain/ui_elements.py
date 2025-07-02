@@ -12,10 +12,9 @@ class Button:
         Args:
             rect (pygame.Rect): The position and dimensions of the button.
             text (str): The text to display on the button.
-            action_id (str): A unique identifier for the button's action (e.g., 'new', 'back').
+            action_id (str): A unique identifier for the button's action.
             font (pygame.font.Font): The font to use for the button text.
-            colors (dict): A dictionary of colors for different states 
-                           (e.g., 'base', 'hover', 'disabled_bg', 'disabled_fg', 'text').
+            colors (dict): A dictionary of colors for different states.
         """
         self.rect = rect
         self.text = text
@@ -28,13 +27,7 @@ class Button:
 
     def handle_event(self, event):
         """
-        Handles mouse events for the button.
-        
-        Args:
-            event (pygame.event.Event): The Pygame event to process.
-            
-        Returns:
-            str or None: The action_id if the button is clicked, otherwise None.
+        Handles mouse events for the button. Returns the action_id on click.
         """
         self.is_hovered = self.rect.collidepoint(pygame.mouse.get_pos())
         
@@ -53,8 +46,8 @@ class Button:
 
         pygame.draw.rect(screen, bg_color, self.rect, border_radius=8)
         
-        text_surf = self.font.render(self.text, True, text_color)
-        text_rect = text_surf.get_rect(center=self.rect.center)
-        screen.blit(text_surf, text_rect)
-
+        if self.text:
+            text_surf = self.font.render(self.text, True, text_color)
+            text_rect = text_surf.get_rect(center=self.rect.center)
+            screen.blit(text_surf, text_rect)
 

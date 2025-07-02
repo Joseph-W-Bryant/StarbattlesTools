@@ -1,96 +1,43 @@
-> **IMPORTANT NOTE:** The most up-to-date, runnable version of this program is located inside the `SeperatedMain` folder. Any Python files in the main root directory are for testing and development purposes and should not be run directly.
+# Star Battle Web App
 
-# Star Battle Playground
+This is a web-based version of the Star Battle puzzle game with a Python/Flask backend and a plain HTML/CSS/JS frontend. This project was refactored from an original Pygame application.
 
-A feature-rich desktop application for playing, solving, and managing Star Battle puzzles. This tool is designed for both casual players and puzzle enthusiasts, offering a robust set of features including a powerful import/export system, a Z3-powered solver, and full session management.
+## How to Run Locally
 
-## About the Game
+This setup uses a standard Python packaging approach that guarantees the backend will run correctly.
 
-Star Battle (also known as "Two Not Touch") is a logic puzzle where the objective is to place a set number of stars in each row, column, and outlined region of a grid. The key rule is that stars cannot be placed in adjacent cells, not even diagonally.
+### 1. Backend Server Setup
 
-## Features
+First, ensure you have Python 3 installed.
 
-* **Dynamic Puzzle Loading:** Instantly fetch new puzzles of varying size and difficulty directly from `puzzle-star-battle.com`.
-* **Full Undo/Redo:** Complete session history tracking for marks allows you to undo and redo every placement.
-* **Advanced Solver:** Utilizes the Z3 SMT solver to check your solution or find one automatically.
-* **Robust Import/Export:** A universal import function that correctly parses both **SBN** and **Web Task** formats. Export your current session to a portable string.
-* **Save & Load Progress:** Save your current puzzle, including annotations and history, to a local `saved_puzzles.txt` file.
-* **Annotation Tools:**
-    * **Draw Mode:** Make freeform notes directly on the grid with multiple colors.
-    * **Border Mode:** Draw custom, thick borders around any group of cells to highlight regions of interest.
-* **Intuitive UI:** A clean interface with a dedicated control panel for all major actions.
+**Navigate to the project's ROOT directory (`StarbattlesTools/`).**
 
-## Installation
-
-This application is built with Python and requires a few external libraries.
-
-**1. Prerequisites:**
-* Python 3.7 or newer.
-
-**2. Install Libraries:**
-The recommended way to install the libraries is using `pip`, Python's package installer. Open your terminal or command prompt and run the following commands:
-
+Create and activate a virtual environment (highly recommended):
 ```bash
-pip install pygame
-pip install requests
-pip install z3-solver
+python -m venv venv
+source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
 ```
 
-> **Note for Linux Users:**
-> Some Linux distributions manage Python packages through their native package manager (like `apt`, `dnf`, or `pacman`). If you prefer this method, or if `pip` gives an "externally-managed environment" error, you should use your system's package manager instead. The package names are often prefixed with `python-` or `python3-`.
->
-> For example, on **Debian or Ubuntu-based systems**, the command would be:
-> ```bash
-> sudo apt update
-> sudo apt install python3-pygame python3-requests python3-z3
-> ```
-
-## How to Run
-
-1.  Clone or download this repository to your local machine.
-2.  Navigate to the `SeperatedMain` folder in your terminal.
-3.  Run the application with the following command:
-
+**Install the project in "editable" mode:**
+This command reads the `pyproject.toml` file, installs all dependencies from it, and links your source code to your Python environment. This permanently solves all import errors.
 ```bash
-python3 main.py
+pip install -e .
 ```
+*(The `.` refers to the current directory)*
 
-## Controls
+### 2. Run the Backend Server
 
-The application has three main interaction modes, which you can switch between using the buttons on the control panel.
+Now, run the server using the simple launcher script:
+```bash
+python run.py
+```
+The backend will now be running at `http://127.0.0.1:5001`. Keep this terminal window open.
 
-### Mark Mode (Default)
+### 3. Frontend Application
 
-This is the standard mode for solving the puzzle.
-
-* **Place/Remove a Star:** **Right-click** on a cell to place a star. Right-click the star again to remove it.
-* **Cycle Marks:** **Left-click** on a cell to cycle through the states: Empty -> X -> Star -> Empty.
-* **Quickly Place X's:** **Left-click and drag** across multiple cells to quickly fill them with X marks.
-
-### Add Border Mode
-
-This mode allows you to draw custom, thick yellow borders to highlight regions.
-
-* **Draw a Border:** **Left-click and drag** over a group of cells. The border will form around the outside of the shape you draw.
-* **Erase a Border:** **Right-click and drag** over any part of a custom border to erase the entire shape.
-
-### Draw Mode
-
-This mode allows you to make freeform annotations on top of the grid.
-
-* **Draw:** **Left-click and drag** to draw on the grid using the selected color.
-* **Erase:** **Right-click and drag** to erase your drawings with a large circular eraser.
-
-### Control Panel Buttons
-
-* **New Puzzle:** Fetches a new puzzle from the web based on the selected size.
-* **Save Puzzle:** Prompts you in the terminal to add a comment, then saves your complete session to `saved_puzzles.txt`.
-* **Import/Export:** Import a puzzle from a string or export your current session to the terminal.
-* **Clear:** Clears player marks (Mark Mode), custom borders (Border Mode), or drawings (Draw Mode).
-* **Toggle (Xs/Dots):** Switches the appearance of the secondary mark.
-* **Undo / Redo:** Steps forward or backward through your history of placed marks. (Does not affect drawings or custom borders).
-* **Draw Mode/Add Border/Mark Mode:** Switches between the main interaction modes.
-* **Color Swatches:** In Draw Mode, select your drawing color.
-* **Board Size Grid:** Select a puzzle size and difficulty to fetch a new puzzle.
-* **Find/Check Solution:** Uses the Z3 solver to find a solution or check your current work.
+1.  Open the root project folder (`StarbattlesTools`) in VS Code.
+2.  Install the **Live Server** extension from the Extensions marketplace.
+3.  Navigate to `frontend/index.html`.
+4.  Right-click the file and select "Open with Live Server".
+5.  Your default web browser will open the application.
 

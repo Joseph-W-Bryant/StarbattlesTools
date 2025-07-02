@@ -20,37 +20,34 @@ from constants import (
 def _parse_as_webtask(main_part):
     """
     Attempts to parse the main part of an import string as Web Task format.
-    This involves finding the boundary between the task string and annotations.
+    This involves finding the boundary between the task string and annotations
+    by finding the longest valid "perfect square" grid from the start.
     Returns a tuple of (puzzle_data, raw_annotation_data) or (None, None).
     """
     try:
-        # --- CORRECTED LOGIC ---
-        # The original, robust logic is restored. It finds the longest possible
-        # valid grid from the start of the string.
         best_split_index = -1
+        
+        # Iterate from the end of the string backwards to find the longest valid task string.
         for i in range(len(main_part), 0, -1):
             potential_task = main_part[:i]
             
-            # Basic checks to quickly discard invalid substrings
             if not potential_task or not potential_task[-1].isdigit():
                 continue
             
-            # The key check: the potential task part itself must only consist of digits and commas.
             if not re.fullmatch(r'[\d,]+', potential_task):
                 continue
-            
-            numbers = potential_task.split(',')
-            # Ensure no empty strings from multiple commas, e.g., "1,2,,3"
-            if any(not n for n in numbers): continue
+
+            try:
+                numbers = [int(n) for n in potential_task.split(',')]
+                num_count = len(numbers)
+                if num_count > 0:
+                    sqrt_val = math.isqrt(num_count)
+                    if sqrt_val * sqrt_val == num_count:
+                        best_split_index = i
+                        break
+            except (ValueError, TypeError):
+                continue
                 
-            num_count = len(numbers)
-            if num_count > 0:
-                # Check if it forms a perfect square grid
-                sqrt_val = math.isqrt(num_count)
-                if sqrt_val * sqrt_val == num_count:
-                    best_split_index = i
-                    break # Found the longest possible valid task string
-        
         if best_split_index != -1:
             task_part = main_part[:best_split_index]
             ann_part = main_part[best_split_index:]
@@ -59,8 +56,10 @@ def _parse_as_webtask(main_part):
                 return puzzle_data, ann_part
                 
         return None, None
-    except Exception:
+    except Exception as e:
+        print(f"Error during webtask parsing: {e}")
         return None, None
+
 
 # --- Public Import/Export Functions ---
 
@@ -77,8 +76,6 @@ def universal_import(input_string):
     puzzle_data = None
     raw_annotation_data = ""
 
-    # --- Strategy 1: Attempt SBN Parsing (Stricter Logic) ---
-    # If it looks like SBN (has a valid header), it MUST be parsed as SBN. No fallbacks.
     if len(main_part) >= 4 and main_part[0:2] in SBN_CODE_TO_DIM_MAP:
         try:
             puzzle_data = decode_sbn(main_part)
@@ -87,16 +84,14 @@ def universal_import(input_string):
                 
             print("Successfully decoded as SBN format.")
             _, dim = parse_and_validate_grid(puzzle_data['task'])
-            # If the puzzle was decoded and the flag is 'e', extract annotation data.
             if dim and main_part[3] == 'e':
                 border_chars_needed = math.ceil((2 * dim * (dim - 1)) / 6)
                 base_sbn_len = 4 + border_chars_needed
                 raw_annotation_data = main_part[base_sbn_len:]
         except Exception as e:
             print(f"Error: Could not parse string as SBN. It has an SBN header but failed validation: {e}")
-            return None # Fail completely if SBN header is present but parsing fails
+            return None
     
-    # --- Strategy 2: Attempt Web Task Parsing (only if not SBN) ---
     else:
         print("Input does not have an SBN header, attempting Web Task format...")
         result = _parse_as_webtask(main_part)
@@ -104,7 +99,6 @@ def universal_import(input_string):
             puzzle_data, raw_annotation_data = result
             print("Successfully decoded as Web Task format.")
 
-    # --- Final processing if any format was successful ---
     if puzzle_data:
         _, dim = parse_and_validate_grid(puzzle_data['task'])
         if dim:
@@ -183,7 +177,7 @@ def decode_player_annotations(annotation_data_str, dim):
         
         char_cursor, cell_cursor = 0, 0
         
-        if dim in [10, 11] and annotation_data_str:
+        if dim in [10, 11] and annotation_data_str and annotation_data_str[0].isdigit():
             value = int(annotation_data_str[0])
             player_grid[0][0] = sbn_to_game_state.get(value, STATE_EMPTY)
             char_cursor, cell_cursor = 1, 1

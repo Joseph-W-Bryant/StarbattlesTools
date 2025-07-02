@@ -1,0 +1,18 @@
+# pyproject.toml
+# This file defines the project structure and metadata.
+# It allows us to install the project in "editable" mode, which permanently
+# solves Python's import path issues for local development.
+
+[project]
+name = "starbattle_backend"
+version = "0.1.0"
+dependencies = [
+    "flask",
+    "flask-cors",
+    "requests",
+    "z3-solver",
+]
+
+[tool.setuptools]
+packages = ["backend"]
+

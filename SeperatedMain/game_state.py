@@ -32,12 +32,13 @@ class GameState:
         self.draw_surface = pygame.Surface((const.GRID_AREA_WIDTH, const.GRID_AREA_HEIGHT), pygame.SRCALPHA)
         self.current_color_index = 0
         self.brush_size = 3
-        self.last_pos = None
+        self.last_pos = None # Will store coordinates relative to the grid surface
 
-        # --- NEW: Border Mode (Free-form) ---
+        # Border Mode (Free-form)
         self.is_border_mode = False
-        self.custom_borders = [] # List of sets, where each set contains (r, c) tuples for a shape
-        self.current_border_path = set() # Holds the (r,c) tuples for the border being drawn
+        # List of tuples: ({(r,c), ...}, (R,G,B))
+        self.custom_borders = [] 
+        self.current_border_path = set()
 
         # General State
         self.mark_is_x = True
@@ -45,11 +46,9 @@ class GameState:
         self.feedback_overlay_alpha = 0
         self.feedback_overlay_color = const.COLOR_CORRECT
         
-        # Mouse Button State (used by multiple modes)
         self.is_left_down = False
         self.is_right_down = False
         
-        # Mark Mode Specific State
         self.is_dragging = False
         self.click_cell = None
         
