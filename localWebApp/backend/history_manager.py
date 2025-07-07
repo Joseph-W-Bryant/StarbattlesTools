@@ -1,4 +1,3 @@
-
 # --- File: backend/history_manager.py ---
 import copy
 from backend.constants import SBN_CHAR_TO_INT, SBN_INT_TO_CHAR
@@ -16,7 +15,9 @@ class HistoryManager:
     def get_current_grid(self):
         grid = copy.deepcopy(self.initial_state)
         for i in range(self.pointer):
-            r, c, _, to_state = self.changes[i]
+            # This needs to access object properties if the format is a list of dicts
+            change = self.changes[i]
+            r, c, _, to_state = change['r'], change['c'], change['from'], change['to']
             grid[r][c] = to_state
         return grid
     def undo(self):
@@ -27,23 +28,42 @@ class HistoryManager:
     def can_redo(self): return self.pointer < len(self.changes)
     def reset(self, initial_state):
         self.initial_state, self.changes, self.pointer = copy.deepcopy(initial_state), [], 0
+
     def serialize(self):
         if not self.changes: return ""
-        changes = [f"{SBN_INT_TO_CHAR[r]}{SBN_INT_TO_CHAR[c]}{SBN_INT_TO_CHAR[f]}{SBN_INT_TO_CHAR[t]}" for r, c, f, t in self.changes]
+        # Correctly serialize from a list of dictionaries
+        changes = [
+            f"{SBN_INT_TO_CHAR.get(c['r'], '0')}{SBN_INT_TO_CHAR.get(c['c'], '0')}"
+            f"{SBN_INT_TO_CHAR.get(c['from'], '0')}{SBN_INT_TO_CHAR.get(c['to'], '0')}"
+            for c in self.changes
+        ]
         pointer = SBN_INT_TO_CHAR.get(self.pointer, '0')
         return f"h:{''.join(changes)}:{pointer}"
+        
     @classmethod
     def deserialize(cls, initial_state, history_string):
         manager = cls(initial_state)
         try:
+            # Check if history_string is valid and has the correct format
+            if not history_string or not history_string.startswith('h:'):
+                return manager
+                
             _, change_data, pointer_data = history_string.split(':')
             if change_data:
                 for i in range(0, len(change_data), 4):
                     s = change_data[i:i+4]
                     if len(s) == 4:
-                        r,c,f,t = (SBN_CHAR_TO_INT[s[0]], SBN_CHAR_TO_INT[s[1]], SBN_CHAR_TO_INT[s[2]], SBN_CHAR_TO_INT[s[3]])
-                        manager.changes.append((r,c,f,t))
+                        # FIXED: Create a dictionary instead of a tuple to match the frontend
+                        change = {
+                            'r': SBN_CHAR_TO_INT.get(s[0]),
+                            'c': SBN_CHAR_TO_INT.get(s[1]),
+                            'from': SBN_CHAR_TO_INT.get(s[2]),
+                            'to': SBN_CHAR_TO_INT.get(s[3]),
+                        }
+                        manager.changes.append(change)
+
             manager.pointer = SBN_CHAR_TO_INT.get(pointer_data, 0)
-        except (KeyError, IndexError, ValueError):
-            return cls(initial_state)
+        except (KeyError, IndexError, ValueError) as e:
+            print(f"Error deserializing history: {e}")
+            return cls(initial_state) # Return a fresh manager on error
         return manager

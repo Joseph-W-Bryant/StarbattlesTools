@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Star Battle Playground</title>
+	
+    <!-- Redirection Script -->
+    <script>
+        (function() {
+            // On initial load, check if the screen is in portrait mode (height > width).
+            if (window.innerHeight > window.innerWidth) {
+                // If so, redirect to the mobile site.
+                // We use replace() to prevent the desktop page from being added to the session history.
+                window.location.replace('./mobile/index.html');
+            }
+        })();
+    </script>
+	
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-gray-800 text-gray-200 flex flex-col items-center justify-center h-screen overflow-hidden p-2 md:p-4 font-['Inter',_sans-serif]">
+
+    <div class="w-full max-w-7xl mx-auto bg-gray-900 rounded-xl shadow-2xl p-4 flex flex-col lg:flex-row">
+	
+	<button id="settings-btn" class="absolute top-4 right-0 text-gray-400 hover:text-white z-10 p-2">
+    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+	</button>
+
+        <!-- Left Control Panel -->
+        <div class="w-full lg:w-64 bg-gray-800/50 rounded-lg p-3 flex flex-col justify-start gap-3 min-h-0">
+
+			
+			
+			<div class="flex flex-col gap-2" style="background-color: rgba(17, 24, 39, 0.5); padding: 0.25rem; border-radius: 0.5rem;">
+			  <button id="mark-mode-btn" style="width: 100%; padding: 0.75rem 1rem; background-color: #374151; border-radius: 0.5rem; font-weight: 600; transition: all 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" onmouseover="this.style.backgroundColor='#4B5563'" onmouseout="this.style.backgroundColor='#374151'">
+				Mark Mode
+			  </button>
+			  <button id="draw-mode-btn" style="width: 100%; padding: 0.75rem 1rem; background-color: #374151; border-radius: 0.5rem; font-weight: 600; transition: all 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" onmouseover="this.style.backgroundColor='#4B5563'" onmouseout="this.style.backgroundColor='#374151'">
+				Draw Mode
+			  </button>
+			  <button id="border-mode-btn" style="width: 100%; padding: 0.75rem 1rem; background-color: #374151; border-radius: 0.5rem; font-weight: 600; transition: all 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" onmouseover="this.style.backgroundColor='#4B5563'" onmouseout="this.style.backgroundColor='#374151'">
+				Border Mode
+			  </button>
+			</div>
+
+
+            
+            <div id="color-picker-wrapper" class="bg-gray-900/50 p-2 rounded-lg">
+                <h3 class="text-sm font-semibold text-gray-300 mb-2 text-center">Preset Colors</h3>
+                <div id="preset-colors" class="grid grid-cols-5 gap-2 mb-2"></div>
+                <h3 class="text-sm font-semibold text-gray-300 mt-3 mb-2 text-center">My Colors</h3>
+                <div class="flex items-center gap-2">
+                    <div id="custom-colors" class="grid grid-cols-5 gap-2 flex-grow"></div>
+                    <button id="custom-color-btn" class="w-10 h-10 bg-gray-700 hover:bg-gray-600 rounded-md flex items-center justify-center shrink-0 shadow-md">
+                        <svg class="w-6 h-6 text-gray-200" fill="currentColor" viewBox="0 0 20 20"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z"/><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd"/></svg>
+                    </button>
+                    <input type="color" id="html-color-picker" class="absolute -z-10 w-0 h-0 opacity-0">
+                </div>
+            </div>
+
+            <div id="brush-size-wrapper" class="bg-gray-900/50 p-2 rounded-lg">
+                <label for="brush-size-slider" class="text-sm font-semibold text-gray-300 mb-2 text-center block">Brush Size: <span id="brush-size-value">5</span></label>
+                <input type="range" id="brush-size-slider" min="1" max="50" value="5" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+            </div>
+
+            <div class="w-full grid grid-cols-2 gap-3">
+                <button id="undo-btn" class="px-4 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg font-semibold transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed">Undo</button>
+                <button id="redo-btn" class="px-4 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg font-semibold transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed">Redo</button>
+            </div>
+            <div class="w-full grid grid-cols-2 gap-3">
+                <button id="clear-btn" class="px-4 py-3 bg-red-600/80 hover:bg-red-700/80 rounded-lg font-semibold transition-all shadow-md">Clear</button>
+                <button id="toggle-mark-btn" class="px-4 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg font-semibold transition-all shadow-md">Dots</button>
+            </div>
+        </div>
+
+        <!-- Center Content: Grid and Status Bar -->
+        <div class="flex-grow h-full flex flex-col items-center justify-start gap-4">
+            
+            <!-- Grid and Canvas Wrapper -->
+            <div id="grid-wrapper" class="relative max-w-full mx-auto flex-grow">
+                <div id="grid-and-canvas-container" class="relative">
+                    <div id="grid-container" class="grid-container bg-gray-100 rounded-md overflow-hidden shadow-lg"></div>
+                    <canvas id="draw-canvas" class="absolute top-0 left-0 w-full h-full pointer-events-none"></canvas>
+                </div>
+                <div id="loading-spinner" class="absolute inset-0 bg-gray-700/50 flex items-center justify-center rounded-md z-50 hidden">
+                    <svg class="animate-spin h-12 w-12 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Status Bar (Moved Below Grid) -->
+            <div id="status-bar" class="w-full text-center h-8 flex items-center justify-center">
+                <p id="solver-status" class="font-semibold text-lg transition-opacity duration-300 opacity-0"></p>
+            </div>
+
+        </div>
+
+        <!-- Right Control Panel -->
+        <div class="w-full lg:w-64 bg-gray-800/50 rounded-lg p-3 flex flex-col gap-3 min-h-0">
+            <div class="flex flex-col gap-3">
+                <button id="new-puzzle-btn" class="w-full px-4 py-3 bg-green-600 hover:bg-green-700 rounded-lg font-semibold transition-all shadow-md">New Puzzle</button>
+                    <button id="save-puzzle-btn" class="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold transition-all shadow-md">Save Puzzle</button>
+                    <button id="load-puzzle-btn" class="w-full px-4 py-3 bg-blue-800 hover:bg-blue-900 rounded-lg font-semibold transition-all shadow-md">Load Puzzle</button>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <button id="import-btn" class="px-4 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg font-semibold transition-all shadow-md">Import</button>
+                <button id="export-btn" class="px-4 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg font-semibold transition-all shadow-md">Export</button>
+            </div>
+            <div class="text-center mt-2">
+                <label for="size-select" class="font-semibold mb-1 block">Size & Difficulty</label>
+                <select id="size-select" class="w-full bg-gray-700 text-white p-2 rounded-lg border-2 border-gray-600 focus:border-blue-500 focus:outline-none">
+                </select>
+            </div>
+            <div class="flex-grow"></div>
+            <div class="flex flex-col gap-3 pt-4">
+                <button id="check-solution-btn" class="w-full px-4 py-3 bg-indigo-600 hover:bg-indigo-700 rounded-lg font-semibold transition-all shadow-md">Check Solution</button>
+                <button id="find-solution-btn" class="w-full px-4 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg font-semibold transition-all shadow-md">Find Solution</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load Puzzle Modal -->
+    <div id="load-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+        <div class="bg-gray-800 rounded-lg shadow-2xl p-6 w-full max-w-2xl max-h-[80vh] flex flex-col">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold text-gray-200">Load Saved Puzzle</h2>
+                <button id="modal-close-btn" class="text-gray-400 hover:text-white">&times;</button>
+            </div>
+            <div id="modal-content" class="overflow-y-auto pr-2">
+                <!-- Saved puzzles will be listed here by script.js -->
+            </div>
+        </div>
+    </div>
+	
+	<div id="settings-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+		<div class="bg-gray-800 rounded-lg shadow-2xl p-6 w-full max-w-md">
+			<div class="flex justify-between items-center mb-6">
+				<h2 class="text-2xl font-bold text-gray-200">Settings</h2>
+				<button id="settings-modal-close-btn" class="text-gray-400 hover:text-white text-4xl font-bold">&times;</button>
+			</div>
+			<div class="space-y-4">
+				<div class="setting-item">
+					<label for="bw-mode-toggle" class="text-lg text-gray-300">Black & White Mode</label>
+					<label class="toggle-switch">
+						<input type="checkbox" id="bw-mode-toggle">
+						<span class="slider"></span>
+					</label>
+				</div>
+				<div class="setting-item">
+					<label for="highlight-errors-toggle" class="text-lg text-gray-300">Highlight Star Errors</label>
+					<label class="toggle-switch">
+						<input type="checkbox" id="highlight-errors-toggle"checked>
+						<span class="slider"></span>
+					</label>
+				</div>
+				<div class="setting-item">
+					<label for="auto-x-around-toggle" class="text-lg text-gray-300">Auto 'X' Around Stars</label>
+					<label class="toggle-switch">
+						<input type="checkbox" id="auto-x-around-toggle">
+						<span class="slider"></span>
+					</label>
+				</div>
+				<div class="setting-item">
+					<label for="auto-x-max-lines-toggle" class="text-lg text-gray-300">Auto 'X' on Max Lines</label>
+					<label class="toggle-switch">
+						<input type="checkbox" id="auto-x-max-lines-toggle">
+						<span class="slider"></span>
+					</label>
+				</div>
+				<div class="setting-item">
+					<label for="auto-x-max-regions-toggle" class="text-lg text-gray-300">Auto 'X' on Max Regions</label>
+					<label class="toggle-switch">
+						<input type="checkbox" id="auto-x-max-regions-toggle">
+						<span class="slider"></span>
+					</label>
+				</div>
+			</div>
+		</div>
+	</div>
+
+    <script src="script.js"></script>
+</body>
+</html>

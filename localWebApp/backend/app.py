@@ -17,9 +17,11 @@ def get_new_puzzle():
         size_id = int(request.args.get('size_id', 5))
         if not 0 <= size_id < len(const.PUZZLE_DEFINITIONS):
             return jsonify({'error': 'Invalid size_id'}), 400
-        puzzle_data = pz.get_puzzle_from_website(size_id)
+        
+        # MODIFIED: Call the new function to get a puzzle from local files
+        puzzle_data = pz.get_puzzle_from_local_file(size_id)
+        
         if puzzle_data:
-            puzzle_data['stars'] = const.PUZZLE_DEFINITIONS[size_id]['stars']
             region_grid, _ = pz.get_grid_from_puzzle_task(puzzle_data)
             if region_grid:
                 return jsonify({
@@ -27,7 +29,7 @@ def get_new_puzzle():
                     'starsPerRegion': puzzle_data['stars'],
                     'sourcePuzzleData': puzzle_data
                 })
-        return jsonify({'error': 'Failed to fetch puzzle from source'}), 500
+        return jsonify({'error': 'Failed to fetch puzzle from local files'}), 500
     except Exception as e:
         print(f"Error in /api/new_puzzle: {e}")
         return jsonify({'error': 'An internal error occurred'}), 500
@@ -98,7 +100,14 @@ def export_puzzle():
         sbn_string = pz.encode_to_sbn(region_grid, stars_per_region, player_grid)
         if history and history.get('changes'):
             h_changes, h_pointer = history['changes'], history.get('pointer', 0)
-            change_strings = [f"{pz.SBN_INT_TO_CHAR[r]}{pz.SBN_INT_TO_CHAR[c]}{pz.SBN_INT_TO_CHAR[f]}{pz.SBN_INT_TO_CHAR[t]}" for r, c, f, t in h_changes]
+            # Correctly access dictionary values by key
+            change_strings = [
+                f"{pz.SBN_INT_TO_CHAR[change['r']]}"
+                f"{pz.SBN_INT_TO_CHAR[change['c']]}"
+                f"{pz.SBN_INT_TO_CHAR[change['from']]}"
+                f"{pz.SBN_INT_TO_CHAR[change['to']]}"
+                for change in h_changes
+            ]
             pointer_char = pz.SBN_INT_TO_CHAR.get(h_pointer, '0')
             history_str = f"h:{''.join(change_strings)}:{pointer_char}"
             sbn_string += f"~{history_str}"

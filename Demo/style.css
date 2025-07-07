@@ -1,0 +1,309 @@
+/* Custom styles for grid lines, aspect ratio, and region borders */
+
+#grid-and-canvas-container {
+    position: relative;
+    width: 100%;
+    height: auto;
+    max-width: 80vmin;   /* Use a slightly larger vmin for better fit */
+    max-height: 80vmin;
+    aspect-ratio: 1 / 1; /* This is the key: forces a 1:1 (square) ratio */
+}
+
+/* This class is applied to the main grid container */
+.grid-container {
+    display: grid;
+    border: 3px solid #1f2937; /* A dark gray border */
+    touch-action: none;
+    width: 100%;
+    height: 100%;
+}
+
+/* Base style for every cell in the grid */
+.grid-cell {
+    position: relative;
+    border-right: 1px solid #84878c; /*  gray vertical line */
+    border-bottom: 1px solid #84878c; /*  gray horizontal line */
+    user-select: none; /* Prevent selecting the SVG icons */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* These selectors remove the border from the last cell in each row and column */
+.grid-cell:nth-child(var(--grid-dim)n) {
+    border-right: none;
+}
+.grid-cell:nth-last-child(-n+var(--grid-dim)) {
+    border-bottom: none;
+}
+
+/* Thick, dark borders for separating regions. These classes are added by JS. */
+.region-border-t { border-top: 2px solid #1f2937; }
+.region-border-b { border-bottom: 2px solid #1f2937; }
+.region-border-l { border-left: 2px solid #1f2937; }
+.region-border-r { border-right: 2px solid #1f2937; }
+
+/* Styles for the marks placed by the player */
+.star-svg {
+    color: #f59e0b; /* amber-500 */
+    filter: drop-shadow(0 1px 1px rgb(0 0 0 / 0.2));
+}
+.dot-svg {
+    color: #4b5563; /* gray-600 */
+}
+.x-svg {
+    color: #374151; /* gray-700 */
+}
+
+/* Make SVGs fill the cell without affecting its layout size */
+.grid-cell svg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+/* Styles for the new Color Picker */
+.color-slot {
+    width: 100%;
+    height: 2rem; /* 32px */
+    border-radius: 0.375rem; /* 6px */
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: border-color 0.2s;
+}
+
+.color-slot.selected {
+    border-color: #3b82f6; /* blue-500 */
+}
+
+.color-slot.empty {
+    background-color: #4b5563; /* gray-600 */
+    background-image: linear-gradient(45deg, #374151 25%, transparent 25%, transparent 75%, #374151 75%, #374151), linear-gradient(45deg, #374151 25%, transparent 25%, transparent 75%, #374151 75%, #374151);
+    background-size: 10px 10px;
+    background-position: 0 0, 5px 5px;
+}
+
+/* Hide the default color picker's text/border */
+#html-color-picker::-webkit-color-swatch-wrapper {
+    padding: 0;
+}
+#html-color-picker::-webkit-color-swatch {
+    border: none;
+    border-radius: 0.375rem;
+}
+
+.color-swatch.selected {
+    outline: 3px solid #3b82f6; /* blue-500 */
+    outline-offset: 2px;
+}
+
+button.selected {
+    background-color: #1d232b !important;
+    color: #c1c4c9;
+}
+
+
+/* --- LAYOUT STYLES --- */
+
+/* Ensure html/body fill the viewport and prevent scrolling */
+html, body {
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+}
+
+/* Main application container */
+.w-full.max-w-7xl.mx-auto.bg-gray-900.rounded-xl.shadow-2xl.p-4.flex.flex-col.lg\:flex-row {
+    /* Use vh unit minus body padding to fill the screen */
+    height: calc(100vh - 2rem);
+    max-height: calc(100vh - 2rem);
+}
+
+/* Center column containing the grid and status bar */
+.flex-grow.h-full.flex.flex-col.items-center.justify-start.gap-4 {
+    flex: 1; /* Allow it to grow and shrink to fill space between side panels */
+    min-width: 0; /* Prevent it from overflowing if content is too wide */
+    overflow: hidden;
+}
+
+/* Wrapper for the grid, used for centering and sizing */
+#grid-wrapper {
+    flex: 1; /* Allow it to take up all available space in the center column */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 0; /* Critical for flex children to not overflow their parents */
+}
+
+/* Canvas should overlay the grid container perfectly */
+#draw-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+/* --- Styles for the Load Puzzle Modal --- */
+
+#modal-close-btn {
+    font-size: 2.5rem;
+    line-height: 1;
+    font-weight: bold;
+}
+
+#modal-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+#modal-content::-webkit-scrollbar-track {
+    background: #1f2937; /* gray-800 */
+}
+
+#modal-content::-webkit-scrollbar-thumb {
+    background-color: #4b5563; /* gray-600 */
+    border-radius: 4px;
+    border: 2px solid #1f2937; /* gray-800 */
+}
+
+.save-item {
+    background-color: #374151; /* gray-700 */
+    border-left: 4px solid #4f46e5; /* indigo-600 */
+    padding: 0.75rem 1rem;
+    border-radius: 0.375rem;
+    margin-bottom: 0.75rem;
+    cursor: pointer;
+    transition: background-color 0.2s, border-color 0.2s;
+}
+
+.save-item:hover {
+    background-color: #4b5563; /* gray-600 */
+    border-left-color: #6366f1; /* indigo-500 */
+}
+
+.save-item p {
+    margin: 0;
+    color: #d1d5db; /* gray-300 */
+    font-style: italic;
+}
+
+.save-item .save-date {
+    font-size: 0.8rem;
+    color: #9ca3af; /* gray-400 */
+    margin-top: 0.25rem;
+    font-style: normal;
+}
+
+
+/* --- Custom rule to make all button text larger --- */
+button {
+    font-size: 1.25rem !important; /* Larger text (equivalent to text-lg) */
+    padding-top: 0.5rem !important;      /* Reduced padding (equivalent to py-2) */
+    padding-bottom: 0.5rem !important;   /* Reduced padding (equivalent to py-2) */
+}
+
+
+
+
+
+/* --- Settings Modal & Toggles --- */
+
+#settings-modal-close-btn {
+    font-size: 2.5rem;
+    line-height: 1;
+    font-weight: bold;
+}
+
+.setting-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #374151; /* gray-700 */
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+}
+
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 60px;
+    height: 34px;
+    flex-shrink: 0;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-switch .slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #4b5563; /* gray-600 */
+    transition: .4s;
+    border-radius: 34px;
+}
+
+.toggle-switch .slider:before {
+    position: absolute;
+    content: "";
+    height: 26px;
+    width: 26px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+.toggle-switch input:checked + .slider {
+    background-color: #22c55e; /* green-500 */
+}
+
+.toggle-switch input:checked + .slider:before {
+    transform: translateX(26px);
+}
+
+/* B&W Mode Overrides */
+.grid-container.bw-mode {
+    border-color: #FFFFFF !important; /* White border for the whole grid */
+}
+.grid-container.bw-mode .grid-cell {
+    background-color: #29313d !important; /* Dark gray cell background */
+}
+.grid-container.bw-mode .region-border-t { border-top-color: #FFFFFF !important; }
+.grid-container.bw-mode .region-border-b { border-bottom-color: #FFFFFF !important; }
+.grid-container.bw-mode .region-border-l { border-left-color: #FFFFFF !important; }
+.grid-container.bw-mode .region-border-r { border-right-color: #FFFFFF !important; }
+
+
+
+/* --- ADD THIS TO THE END OF style.css --- */
+
+/* B&W Mode Mark Color Overrides */
+.grid-container.bw-mode .star-svg {
+    color: #FFFFFF !important; /* White */
+}
+
+.grid-container.bw-mode .x-svg {
+    color: #EF4444 !important; /* Red-500 */
+}
+
+.grid-container.bw-mode .dot-svg {
+    color: #9ca3af !important; /* Gray-400 */
+}
+
+
+
+/* Style for stars that are invalid (adjacent, too many in row/col/region) */
+.grid-cell.error-star .star-svg {
+    color: #EF4444 !important; /* Red-500 */
+}

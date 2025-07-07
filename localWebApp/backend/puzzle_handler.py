@@ -1,9 +1,10 @@
 # puzzle_handler.py
-import requests
 import re
 import math
 import hashlib
 from collections import deque
+import os
+import random
 
 # Use absolute imports from the 'backend' package
 from backend.history_manager import HistoryManager
@@ -13,7 +14,46 @@ from backend.constants import (
     DIM_TO_SBN_CODE_MAP, UNIFIED_COLORS_BG, BASE64_DISPLAY_ALPHABET
 )
 
-# --- (The rest of the file remains the same until display_terminal_grid) ---
+def get_puzzle_from_local_file(size_id):
+    """
+    Fetches a random puzzle SBN string from a local text file based on size_id.
+    """
+    try:
+        # --- MODIFIED LINE ---
+        # The filename is now the size_id directly (e.g., '0.txt', '1.txt').
+        file_path = os.path.join(os.path.dirname(__file__), 'puzzles', f'{size_id}.txt')
+
+        print(f"\nFetching puzzle from local file: {file_path}...")
+
+        if not os.path.exists(file_path):
+            print(f"Error: Puzzle file not found at {file_path}")
+            return None
+
+        with open(file_path, 'r') as f:
+            puzzles = [line.strip() for line in f if line.strip()]
+        
+        if not puzzles:
+            print(f"Error: No puzzles found in {file_path}")
+            return None
+            
+        random_sbn_string = random.choice(puzzles)
+        print(f"Selected SBN: {random_sbn_string}")
+
+        puzzle_data = decode_sbn(random_sbn_string)
+        
+        if puzzle_data:
+            print("Successfully decoded SBN puzzle from local file.")
+            return puzzle_data
+
+        print("Error: Failed to decode the SBN string.")
+        return None
+
+    except Exception as e:
+        print(f"Error fetching puzzle from local file: {e}")
+        return None
+
+
+# --- (Code from universal_import down to decode_player_annotations is unchanged) ---
 
 def _parse_as_webtask(main_part):
     try:
@@ -73,25 +113,6 @@ def universal_import(input_string):
     print("Error: Could not recognize puzzle format.")
     return None
 
-def get_puzzle_from_website(size_selection):
-    url = "https://www.puzzle-star-battle.com/"
-    if WEBSITE_SIZE_IDS[size_selection] != 0: url += f"?size={WEBSITE_SIZE_IDS[size_selection]}"
-    headers = {'User-Agent': 'Mozilla/5.0'}
-    print(f"\nFetching puzzle from {url}...")
-    try:
-        response = requests.get(url, headers=headers, timeout=10)
-        response.raise_for_status()
-        task_match = re.search(r"var task = '([^']+)';", response.text)
-        hash_match = re.search(r"hashedSolution: '([^']+)'", response.text)
-        if task_match:
-            print("Successfully extracted puzzle data.")
-            return {'task': task_match.group(1), 'solution_hash': hash_match.group(1) if hash_match else None}
-        print("Error: Puzzle data not found in response.")
-        return None
-    except requests.RequestException as e:
-        print(f"Error fetching puzzle: {e}")
-        return None
-
 def encode_player_annotations(player_grid):
     if not player_grid: return ""
     dim, game_to_sbn = len(player_grid), {STATE_EMPTY: 0, STATE_SECONDARY_MARK: 1, STATE_STAR: 2}
@@ -125,15 +146,29 @@ def decode_player_annotations(annotation_data_str, dim):
     except (KeyError, IndexError, ValueError): return [[STATE_EMPTY] * dim for _ in range(dim)]
 
 def encode_to_sbn(region_grid, stars, player_grid=None):
-    dim, sbn_code = len(region_grid), DIM_TO_SBN_CODE_MAP.get(len(region_grid))
+    dim = len(region_grid)
+    sbn_code = DIM_TO_SBN_CODE_MAP.get(dim)
     if not sbn_code: return None
-    v_bits = ['1' if c<dim-1 and r_g[c]!=r_g[c+1] else '0' for r_g in region_grid for c in range(dim-1)]
-    h_bits = ['1' if r<dim-1 and region_grid[r][c]!=region_grid[r+1][c] else '0' for r in range(dim-1) for c in range(dim)]
-    bitfield = "".join(v_bits) + "".join(h_bits)
-    padded = ('0' * ((6 - len(bitfield) % 6) % 6)) + bitfield
-    region_data = "".join([SBN_INT_TO_CHAR[int(padded[i:i+6], 2)] for i in range(0, len(padded), 6)])
-    ann_data = encode_player_annotations(player_grid) if player_grid else ""
-    return f"{sbn_code}{stars}{'e' if ann_data else 'W'}{region_data}{ann_data}"
+
+    # Vertical borders are stored row-by-row, which is correct.
+    vertical_bits = ['1' if c < dim - 1 and region_grid[r][c] != region_grid[r][c+1] else '0' for r in range(dim) for c in range(dim - 1)]
+    
+    # **FIXED**: Horizontal borders must be stored column-by-column to match the decoder.
+    # The original loop order `for r... for c...` was incorrect. It has been changed to `for c... for r...`.
+    horizontal_bits = ['1' if r < dim - 1 and region_grid[r][c] != region_grid[r+1][c] else '0' for c in range(dim) for r in range(dim - 1)]
+    
+    clean_bitfield = "".join(vertical_bits) + "".join(horizontal_bits)
+    
+    padding_needed = (6 - len(clean_bitfield) % 6) % 6
+    padded_bitfield = ('0' * padding_needed) + clean_bitfield
+    
+    region_data_chars = [SBN_INT_TO_CHAR[int(padded_bitfield[i:i+6], 2)] for i in range(0, len(padded_bitfield), 6)]
+    region_data = "".join(region_data_chars)
+
+    raw_annotation_data = encode_player_annotations(player_grid) if player_grid else ""
+    flag = 'e' if raw_annotation_data else 'W'
+    
+    return f"{sbn_code}{stars}{flag}{region_data}{raw_annotation_data}"
 
 def decode_sbn(sbn_string):
     try:
@@ -165,8 +200,10 @@ def reconstruct_grid_from_borders(dim, v_bits, h_bits):
                 grid[r_start][c_start] = region_id
                 while q:
                     r, c = q.popleft()
+                    # Reads vertical borders in row-major order
                     if c < dim-1 and grid[r][c+1]==0 and v_bits[r*(dim-1)+c]=='0': grid[r][c+1]=region_id; q.append((r,c+1))
                     if c > 0 and grid[r][c-1]==0 and v_bits[r*(dim-1)+c-1]=='0': grid[r][c-1]=region_id; q.append((r,c-1))
+                    # Reads horizontal borders in column-major order
                     if r < dim-1 and grid[r+1][c]==0 and h_bits[c*(dim-1)+r]=='0': grid[r+1][c]=region_id; q.append((r+1,c))
                     if r > 0 and grid[r-1][c]==0 and h_bits[c*(dim-1)+r-1]=='0': grid[r-1][c]=region_id; q.append((r-1,c))
                 region_id += 1
@@ -182,7 +219,6 @@ def parse_and_validate_grid(task_string):
         return [nums[i*dim:(i+1)*dim] for i in range(dim)], dim
     except (ValueError, TypeError): return None, None
 
-# --- THIS FUNCTION IS FIXED ---
 def display_terminal_grid(grid, title, content_grid=None):
     """Prints a simple version of the grid to the terminal for server-side debugging."""
     if not grid: return
@@ -191,10 +227,9 @@ def display_terminal_grid(grid, title, content_grid=None):
     for r in range(dim):
         row_str = []
         for c in range(dim):
-            # The symbol is either a star (if content is provided) or the region number
-            symbol = '★' if content_grid and content_grid[r][c] == 1 else str(grid[r][c])
-            # We just append the symbol, no more complex color codes
-            row_str.append(f"{symbol:^3}") # Pad to 3 spaces for alignment
+            # Using modulo to keep alignment for double-digit region numbers
+            symbol = '★' if content_grid and content_grid[r][c] == 1 else str(grid[r][c] % 10)
+            row_str.append(f"{symbol:^3}") 
         print(" ".join(row_str))
     print("-----------------\n")
 
@@ -202,7 +237,6 @@ def get_grid_from_puzzle_task(puzzle_data):
     if not puzzle_data or 'task' not in puzzle_data: return None, None
     region_grid, dimension = parse_and_validate_grid(puzzle_data['task'])
     if region_grid:
-        # This call is now safe
         display_terminal_grid(region_grid, "Terminal Symbol Display (Server)")
         return region_grid, dimension
     return None, None
@@ -212,7 +246,6 @@ def check_solution_hash(player_grid, puzzle_data):
     if not puzzle_data or 'solution_hash' not in puzzle_data or not puzzle_data['solution_hash']:
         return False
         
-    # Convert player grid (with states 0, 1, 2) to the 'y'/'n' string format
     yn_string = "".join(['y' if cell == STATE_STAR else 'n' for row in player_grid for cell in row])
     string_to_hash = puzzle_data['task'] + yn_string
     calculated_hash = hashlib.md5(string_to_hash.encode('utf-8')).hexdigest()
@@ -227,4 +260,3 @@ def check_solution_hash(player_grid, puzzle_data):
         print("\033[91m--> Hash does NOT match.\033[0m")
         
     return is_correct
-
