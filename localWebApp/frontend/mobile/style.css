@@ -9,7 +9,6 @@
     aspect-ratio: 1 / 1;
 }
 
-/* This class is applied to the main grid container */
 .grid-container {
     display: grid;
     border: 3px solid #1f2937; /* A dark gray border */
@@ -18,7 +17,6 @@
     height: 100%;
 }
 
-/* Base style for every cell in the grid */
 .grid-cell {
     position: relative;
     border-right: 1px solid #84878c; /* gray vertical line */
@@ -29,32 +27,25 @@
     justify-content: center;
 }
 
-/* These selectors remove the border from the last cell in each row and column */
 .grid-cell:nth-child(var(--grid-dim)n) { border-right: none; }
 .grid-cell:nth-last-child(-n+var(--grid-dim)) { border-bottom: none; }
-
-/* Thick, dark borders for separating regions. These classes are added by JS. */
 .region-border-t { border-top: 2px solid #1f2937; }
 .region-border-b { border-bottom: 2px solid #1f2937; }
 .region-border-l { border-left: 2px solid #1f2937; }
 .region-border-r { border-right: 2px solid #1f2937; }
-
-/* Styles for the marks placed by the player */
 .star-svg { color: #f59e0b; filter: drop-shadow(0 1px 1px rgb(0 0 0 / 0.2)); }
 .dot-svg { color: #4b5563; }
 .x-svg { color: #374151; }
 
-/* Make SVGs fill the cell without affecting its layout size */
 .grid-cell svg { 
     position: absolute; 
     top: 0; 
     left: 0; 
     width: 100%; 
     height: 100%;
-    animation: popIn 0.2s ease-out; /* NEW: Pop-in animation for marks */
+    animation: popIn 0.2s ease-out;
 }
 
-/* Canvas should overlay the grid container perfectly */
 #draw-canvas {
     position: absolute;
     top: 0;
@@ -64,7 +55,7 @@
     pointer-events: none;
 }
 
-/* --- NEW MOBILE LAYOUT STYLES --- */
+/* --- MOBILE LAYOUT STYLES --- */
 
 html, body {
     height: 100%;
@@ -73,14 +64,10 @@ html, body {
     position: fixed;
     width: 100%;
 }
-
-/* Game screen fills the viewport and uses flexbox to position elements */
 #game-screen {
     height: 100vh;
     height: -webkit-fill-available;
 }
-
-/* Wrapper for the grid, used for centering and sizing */
 #grid-wrapper {
     flex-grow: 1;
     display: flex;
@@ -91,43 +78,143 @@ html, body {
     padding: 8px;
 }
 
-/* Bottom Toolbar Styling */
+/* --- TOP BAR STYLES -- */
+.top-bar-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem; /* 4px */
+}
+.top-bar-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background-color: transparent;
+    border-radius: 9999px;
+    color: #d1d5db;
+    padding: 0;
+}
+.top-bar-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+}
+.top-bar-btn:disabled {
+    color: #6b7280 !important;
+    background-color: transparent !important;
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+
+/* --- BOTTOM TOOLBAR STYLING --- */
 #bottom-toolbar {
     flex-shrink: 0;
     box-shadow: 0 -4px 12px rgba(0,0,0,0.3);
 }
 
-.toolbar-tab-btn, .toolbar-btn {
-    padding: 0.9rem 0.5rem;
-    font-size: 0.9rem;
-    font-weight: 600;
-    border-radius: 0.5rem;
-    -webkit-tap-highlight-color: transparent;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.25);
-    /* Define separate transitions for a custom bounce on the transform */
-    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
-                box-shadow 0.1s ease-out,
-                filter 0.1s ease-out;
+/* NEW: Styles for the action bar */
+#action-bar {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
 }
 
-/* More "clicky" active state */
-.toolbar-tab-btn.btn-active, .toolbar-btn.btn-active,
-.toolbar-tab-btn:active, .toolbar-btn:active {
-    transform: scale(0.95);
-    filter: brightness(0.9);
-    box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
-    /* Use a faster, non-bouncy transition for the press-down action */
+.action-bar-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    background-color: transparent;
+    border-radius: 9999px;
+    color: #d1d5db;
+    padding: 0;
+}
+.action-bar-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+.action-bar-btn.red-icon { color: #fca5a5; }
+.action-bar-btn.green-icon { color: #86efac; }
+.action-bar-btn.red-icon:hover { color: #f87171; }
+.action-bar-btn.green-icon:hover { color: #4ade80; }
+.action-bar-btn:disabled {
+    color: #6b7280 !important;
+    background-color: transparent !important;
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+
+#mode-tools-tab {
+    display: flex !important;
+    flex-direction: row;
+    gap: 0.5rem;
+}
+
+.contextual-box {
+    background-color: rgba(0,0,0,0.2);
+    border-radius: 0.5rem;
+    padding: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+#contextual-controls, #toggle-mark-btn {
+    margin-top: 0 !important;
+}
+
+
+/* --- HAMBURGER MENU STYLES --- */
+#puzzle-actions-tab {
+    position: absolute;
+    bottom: 100%; 
+    right: 0.5rem; 
+    margin-bottom: 0.5rem; 
+    background-color: #2d3748; 
+    border-radius: 0.5rem;
+    padding: 0.5rem;
+    box-shadow: 0 -4px 15px rgba(0,0,0,0.5);
+    z-index: 20;
+    display: none;
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+    width: 150px;
+}
+#puzzle-actions-tab.is-open {
+    display: grid;
+}
+
+/* --- UPDATED "CLICKY" BUTTON STYLES --- */
+.toolbar-btn, .top-bar-btn, .color-slot, .action-bar-btn {
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    border: none;
+    cursor: pointer;
+}
+.toolbar-btn:active, .top-bar-btn:active, .color-slot:active, .action-bar-btn:active,
+.toolbar-btn.btn-active, .top-bar-btn.btn-active, .color-slot.btn-active, .action-bar-btn.btn-active {
+    transform: scale(0.92);
+    filter: brightness(0.85);
     transition: transform 0.05s ease-out;
 }
 
-.toolbar-tab-btn {
-    background-color: #374151;
-    color: #d1d5db;
+/* --- Other Button Styles --- */
+.toolbar-btn {
+    font-size: 0.9rem;
+    font-weight: 600;
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.25);
+	padding: 0.25rem 1rem; /* <-- Add this line */
 }
-
-.toolbar-tab-btn.selected {
-    background-color: #4f46e5;
-    color: white;
+.mode-btn {
+    padding: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 1/1;
 }
 
 .mode-btn.selected {
@@ -135,8 +222,17 @@ html, body {
     color: #c1c4c9;
     outline: 2px solid #4f46e5;
 }
-
-/* Hide disabled buttons visually and functionally */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+}
 button:disabled, .toolbar-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
@@ -146,17 +242,17 @@ button:disabled, .toolbar-btn:disabled {
     box-shadow: none !important;
 }
 
-
-/* --- Styles for the Color Picker --- */
+/* --- MISC STYLES --- */
 .color-slot {
     width: 100%;
     height: 2.25rem;
     border-radius: 0.375rem;
     cursor: pointer;
     border: 2px solid transparent;
-    transition: border-color 0.2s;
 }
-.color-slot.selected { border-color: #3b82f6; }
+.color-slot.selected { 
+    border-color: #FFFFFF;
+}
 .color-slot.empty {
     background-color: #4b5563;
     background-image: linear-gradient(45deg, #374151 25%, transparent 25%, transparent 75%, #374151 75%, #374151), linear-gradient(45deg, #374151 25%, transparent 25%, transparent 75%, #374151 75%, #374151);
@@ -166,8 +262,6 @@ button:disabled, .toolbar-btn:disabled {
 #html-color-picker::-webkit-color-swatch-wrapper { padding: 0; }
 #html-color-picker::-webkit-color-swatch { border: none; border-radius: 0.375rem; }
 
-
-/* --- Styles for Modals --- */
 #load-modal, #settings-modal {
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
@@ -176,7 +270,6 @@ button:disabled, .toolbar-btn:disabled {
 #settings-modal > div {
     animation: slideInUp 0.3s ease-out forwards;
 }
-
 #modal-close-btn { font-size: 2.5rem; line-height: 1; font-weight: bold; }
 #modal-content::-webkit-scrollbar { width: 8px; }
 #modal-content::-webkit-scrollbar-track { background: #1f2937; }
@@ -189,8 +282,6 @@ button:disabled, .toolbar-btn:disabled {
 .save-item p { margin: 0; color: #d1d5db; font-style: italic; }
 .save-item .save-date { font-size: 0.8rem; color: #9ca3af; margin-top: 0.25rem; font-style: normal; }
 
-
-/* --- Settings Modal & Toggles --- */
 #settings-modal-close-btn { font-size: 2.5rem; line-height: 1; font-weight: bold; }
 .setting-item {
     display: flex; justify-content: space-between; align-items: center;
@@ -203,8 +294,6 @@ button:disabled, .toolbar-btn:disabled {
 .toggle-switch input:checked + .slider { background-color: #22c55e; }
 .toggle-switch input:checked + .slider:before { transform: translateX(26px); }
 
-
-/* --- B&W Mode and Error Overrides --- */
 .grid-container.bw-mode { border-color: #FFFFFF !important; }
 .grid-container.bw-mode .grid-cell { background-color: #29313d !important; }
 .grid-container.bw-mode .region-border-t { border-top-color: #FFFFFF !important; }
@@ -216,54 +305,18 @@ button:disabled, .toolbar-btn:disabled {
 .grid-container.bw-mode .dot-svg { color: #9ca3af !important; }
 .grid-cell.error-star .star-svg { color: #EF4444 !important; }
 
+@keyframes popIn { from { transform: scale(0.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes slideInUp { from { transform: translateY(25px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
-/* --- NEW: ANIMATIONS --- */
 
-/* For screen transitions */
-.screen {
-    transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
-}
-.screen.hidden {
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
+#solver-status {
+    font-size: clamp(1.1rem, 3.5vw, 1.1rem);
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
 }
 
-/* Staggered animation for grid cells loading */
-.grid-cell.reveal {
-    opacity: 0;
-    transform: scale(0.9);
-    animation: cellReveal 0.4s ease-out forwards;
+.grid-container.solution-mode {
+    border-color: #f59e0b !important;
+    box-shadow: 0 0 15px rgba(245, 158, 11, 0.5);
 }
-
-@keyframes cellReveal {
-    to {
-        opacity: 1;
-        transform: scale(1);
-    }
-}
-
-/* Pop-in animation for marks */
-@keyframes popIn {
-    from {
-        transform: scale(0.4);
-        opacity: 0;
-    }
-    to {
-        transform: scale(1);
-        opacity: 1;
-    }
-}
-
-/* Slide-up animation for modals */
-@keyframes slideInUp {
-    from {
-        transform: translateY(25px);
-        opacity: 0;
-    }
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
-}
-

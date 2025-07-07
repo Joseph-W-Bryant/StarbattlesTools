@@ -97,10 +97,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const loadModal = document.getElementById('load-modal');
     const modalContent = document.getElementById('modal-content');
     const modalCloseBtn = document.getElementById('modal-close-btn');
-    const presetColorsContainer = document.getElementById('preset-colors');
-    const customColorsContainer = document.getElementById('custom-colors');
+    // MODIFIED: Removed old color container references
     const htmlColorPicker = document.getElementById('html-color-picker');
     const customColorBtn = document.getElementById('custom-color-btn');
+    const hamburgerMenuBtn = document.getElementById('hamburger-menu-btn');
+    const puzzleActionsTab = document.getElementById('puzzle-actions-tab');
+
 
     // --- SVG ICONS ---
     const STAR_SVG = `<svg class="w-full h-full p-1 star-svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>`;
@@ -108,8 +110,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const X_SVG = `<svg class="w-full h-full p-[20%] x-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>`;
 
     // --- Color State ---
-    const PRESET_COLORS = ['#EF4444', '#F59E0B', '#22C55E', '#3B82F6', '#000000'];
-    state.customColors = Array(5).fill(null);
+    const PRESET_COLORS = ['#EF4444', '#22C55E', '#3B82F6'];
+    state.customColors = Array(1).fill(null);
     state.currentColor = PRESET_COLORS[0];
     let preActionState = null;
 
@@ -416,14 +418,12 @@ document.addEventListener('DOMContentLoaded', () => {
         let starPlacingAction = null;
         for (let i = state.history.mark.pointer; i >= 0; i--) {
             const action = state.history.mark.stack[i];
-            // Find compound actions that placed a star here
             if (action.type === 'compoundMark' && action.changes.some(change => change.r === r && change.c === c && change.to === 1)) {
                 starPlacingAction = action;
                 break;
             }
-            // Also find simple legacy 'mark' actions that may have placed a star (from older saves)
             if (action.type === 'mark' && action.r === r && action.c === c && action.to === 1) {
-                starPlacingAction = { type: 'compoundMark', changes: [action] }; // Treat it as a compound action
+                starPlacingAction = { type: 'compoundMark', changes: [action] };
                 break;
             }
         }
@@ -432,16 +432,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const removalChanges = [];
             starPlacingAction.changes.forEach(originalChange => {
                 if (state.playerGrid[originalChange.r][originalChange.c] === originalChange.to) {
-                    // By default, revert the cell to its original state.
                     let revertToState = originalChange.from;
-                    
-                    // BUT, if this is the specific cell we clicked (the star)...
                     if (originalChange.r === r && originalChange.c === c) {
-                        // ...force it to revert to 0 (empty) instead.
                         revertToState = 0;
                     }
-                    
-                    // Now, apply the change using the potentially modified state.
                     applyMarkChange(originalChange.r, originalChange.c, originalChange.to, revertToState);
                     removalChanges.push({ r: originalChange.r, c: originalChange.c, from: originalChange.to, to: revertToState });
                 }
@@ -451,7 +445,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 pushHistory({ type: 'compoundMark', changes: removalChanges });
             }
         } else {
-            // Fallback for stars without a clear history (e.g., from an import)
             const change = { r, c, from: 1, to: 0 };
             if (applyMarkChange(r, c, 1, 0)) {
                 pushHistory({ type: 'compoundMark', changes: [change] });
@@ -460,21 +453,35 @@ document.addEventListener('DOMContentLoaded', () => {
         updateErrorHighlightingUI();
     }
 
+    // MODIFIED: This function now populates a single container
     function renderColorPicker() {
-        presetColorsContainer.innerHTML = PRESET_COLORS.map(color =>
+        const colorSlotsContainer = document.getElementById('color-slots-container');
+        if (!colorSlotsContainer) return;
+
+        let allSlotsHTML = '';
+
+        // Add preset colors
+        allSlotsHTML += PRESET_COLORS.map(color =>
             `<div class="color-slot" data-color="${color}" style="background-color: ${color};"></div>`
         ).join('');
-        customColorsContainer.innerHTML = state.customColors.map((color, index) => {
+
+        // Add custom colors
+        allSlotsHTML += state.customColors.map((color, index) => {
             if (color) {
                 return `<div class="color-slot" data-color="${color}" style="background-color: ${color};"></div>`;
             } else {
                 return `<div class="color-slot empty" data-custom-index="${index}"></div>`;
             }
         }).join('');
+
+        colorSlotsContainer.innerHTML = allSlotsHTML;
+
+        // Update selection highlight on all slots
         document.querySelectorAll('#color-picker-wrapper .color-slot').forEach(slot => {
             slot.classList.toggle('selected', slot.dataset.color === state.currentColor);
         });
     }
+
     function selectColor(newColor) {
         state.currentColor = newColor;
         htmlColorPicker.value = newColor;
@@ -535,7 +542,7 @@ document.addEventListener('DOMContentLoaded', () => {
 		const change = modeHistory.stack[modeHistory.pointer];
 
 		switch (change.type) {
-			case 'mark': // Legacy support for loaded saves
+			case 'mark':
 				applyMarkChange(change.r, change.c, change.to, change.from);
                 updateErrorHighlightingUI();
 				break;
@@ -582,7 +589,7 @@ document.addEventListener('DOMContentLoaded', () => {
 		const change = modeHistory.stack[modeHistory.pointer];
 
 		switch (change.type) {
-             case 'mark': // Legacy support
+             case 'mark':
                 applyMarkChange(change.r, change.c, change.from, change.to);
                 updateErrorHighlightingUI();
                 break;
@@ -703,20 +710,17 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleInteractionMove(e) {
         if (!state.isLeftDown) return;
     
-        // If a draw is already scheduled, don't schedule another one.
         if (state.isDrawing) return;
     
         state.isDrawing = true;
         window.requestAnimationFrame(() => {
             const pos = getEventPos(e);
             if (!pos.onGrid) {
-                // If the cursor is off the grid, end the interaction.
                 handleInteractionEnd(e);
                 state.isDrawing = false;
                 return;
             }
             
-            // Only update if the position has actually changed.
             if (state.lastPos && pos.row === state.lastPos.row && pos.col === state.lastPos.col && state.activeMode !== 'draw') {
                  state.isDrawing = false;
                  return;
@@ -744,10 +748,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             } else if (state.activeMode === 'draw') {
                 const painter = (ctx) => {
-                    if (!state.lastPos) return; // Need a previous point to draw a line
+                    if (!state.lastPos) return;
                     ctx.lineTo(pos.x, pos.y);
                     ctx.stroke();
-                    // This is important: Start the next line segment from the current position.
                     ctx.beginPath();
                     ctx.moveTo(pos.x, pos.y);
                 };
@@ -759,7 +762,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
     
             state.lastPos = pos;
-            state.isDrawing = false; // Allow the next frame to be scheduled.
+            state.isDrawing = false;
         });
     }
 
@@ -853,6 +856,7 @@ document.addEventListener('DOMContentLoaded', () => {
             findSolution();
         } else {
             state.isViewingSolution = !state.isViewingSolution;
+            gridContainer.classList.toggle('solution-mode', state.isViewingSolution);
             updateSolutionButtonUI();
             redrawAllOverlays();
         }
@@ -990,19 +994,16 @@ document.addEventListener('DOMContentLoaded', () => {
 			state.solution = null;
 			clearPuzzleState();
 			
-            // Reconstruct player grid and full history from the imported data
             if (data.history && data.history.changes && Array.isArray(data.history.changes)) {
 				const importedMarkHistory = data.history.changes; 
                 const newMarkStack = [];
                 
 				importedMarkHistory.forEach(change => {
 					if (change.r < state.gridDim && change.c < state.gridDim) {
-						// Create a simple 'mark' action for each step, preserving the history
 						newMarkStack.push({ type: 'mark', r: change.r, c: change.c, from: change.from, to: change.to });
 					}
 				});
 
-                // Apply the final state of the player grid directly
                 state.playerGrid = data.playerGrid;
                 state.history.mark.stack = newMarkStack;
                 state.history.mark.pointer = newMarkStack.length - 1;
@@ -1034,11 +1035,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const stackToExport = state.history.mark.stack.slice(0, state.history.mark.pointer + 1);
             
             stackToExport.forEach(action => {
-                // Handle legacy 'mark' type from loaded saves
                 if (action.type === 'mark') {
                     historyForExport.push({ r: action.r, c: action.c, from: action.from, to: action.to });
                 } 
-                // Handle new 'compoundMark' type created during gameplay
                 else if (action.type === 'compoundMark') {
                     action.changes.forEach(change => {
                         historyForExport.push({ r: change.r, c: change.c, from: change.from, to: change.to });
@@ -1152,6 +1151,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- INITIALIZATION & EVENT LISTENERS ---
     function init() {
         function addResponsiveListener(element, callback) {
+            if (!element) return;
             let touchHandled = false;
             const onTouchEnd = () => {
                 element.classList.remove('btn-active');
@@ -1176,16 +1176,6 @@ document.addEventListener('DOMContentLoaded', () => {
 		populateSizeSelector();
         addResponsiveListener(backToHomeBtn, showHomeScreen);
 
-        toolbarTabBtns.forEach(btn => {
-            addResponsiveListener(btn, () => {
-                toolbarTabBtns.forEach(b => b.classList.remove('selected'));
-                toolbarTabContents.forEach(c => c.classList.add('hidden'));
-                btn.classList.add('selected');
-                const tabName = btn.dataset.tab;
-                document.getElementById(`${tabName}-tab`).classList.remove('hidden');
-            });
-        });
-
 		addResponsiveListener(newPuzzleBtn, fetchNewPuzzle);
 		addResponsiveListener(savePuzzleBtn, handleSave);
 		addResponsiveListener(checkSolutionBtn, checkSolution);
@@ -1198,23 +1188,28 @@ document.addEventListener('DOMContentLoaded', () => {
 			switch (state.activeMode) {
 				case 'draw':
 					if (!state.bufferCtx || state.bufferCanvas.width === 0) return;
-					action = { type: 'clearDraw', before: state.bufferCtx.getImageData(0, 0, state.bufferCanvas.width, state.bufferCanvas.height) };
-					state.bufferCtx.clearRect(0, 0, state.bufferCanvas.width, state.bufferCanvas.height);
-					redrawAllOverlays();
+                    //if (confirm('Are you sure you want to clear all drawings? This CAN be undone.')) {
+					    action = { type: 'clearDraw', before: state.bufferCtx.getImageData(0, 0, state.bufferCanvas.width, state.bufferCanvas.height) };
+					    state.bufferCtx.clearRect(0, 0, state.bufferCanvas.width, state.bufferCanvas.height);
+					    redrawAllOverlays();
+                    //}
 					break;
 				case 'border':
 					if (state.customBorders.length === 0) return;
-					action = { type: 'clearBorder', before: deepCopyBorders(state.customBorders) };
-					state.customBorders = [];
-					redrawAllOverlays();
+                    //if (confirm('Are you sure you want to clear all custom borders? This CAN be undone.')) {
+					    action = { type: 'clearBorder', before: deepCopyBorders(state.customBorders) };
+					    state.customBorders = [];
+					    redrawAllOverlays();
+                    //}
 					break;
 				case 'mark':
-					if (confirm('Are you sure you want to clear all marks? This CAN be undone.')) {
+					//if (confirm('Are you sure you want to clear all stars and marks? This CAN be undone.')) {
 					    action = { type: 'clearMarks', before: JSON.parse(JSON.stringify(state.playerGrid)) };
 					    _internalClearMarks();
 					    renderAllMarks();
                         updateErrorHighlightingUI();
-					} break;
+					//} 
+					break;
 			}
 			if (action.type) pushHistory(action);
         });
@@ -1241,6 +1236,18 @@ document.addEventListener('DOMContentLoaded', () => {
 		addResponsiveListener(modalCloseBtn, () => loadModal.classList.add('hidden'));
 		addResponsiveListener(settingsBtn, () => settingsModal.classList.remove('hidden'));
 		addResponsiveListener(settingsModalCloseBtn, () => settingsModal.classList.add('hidden'));
+
+        addResponsiveListener(hamburgerMenuBtn, (e) => {
+            e.stopPropagation();
+            puzzleActionsTab.classList.toggle('is-open');
+        });
+        puzzleActionsTab.addEventListener('click', (e) => e.stopPropagation());
+        window.addEventListener('click', () => {
+            if (puzzleActionsTab.classList.contains('is-open')) {
+                puzzleActionsTab.classList.remove('is-open');
+            }
+        });
+
 
 		bwModeToggle.addEventListener('change', (e) => { state.isBwMode = e.target.checked; renderGrid(); });
 		highlightErrorsToggle.addEventListener('change', (e) => { state.highlightErrors = e.target.checked; updateErrorHighlightingUI(); });
@@ -1292,15 +1299,22 @@ document.addEventListener('DOMContentLoaded', () => {
 		addResponsiveListener(customColorBtn, () => { state.colorToReplace = state.currentColor; htmlColorPicker.click(); });
 		htmlColorPicker.addEventListener('input', (e) => selectColor(e.target.value));
 		htmlColorPicker.addEventListener('change', (e) => saveCustomColor(e.target.value));
-		presetColorsContainer.addEventListener('click', (e) => { if (e.target.dataset.color) selectColor(e.target.dataset.color); });
-		customColorsContainer.addEventListener('click', (e) => {
-			if (e.target.dataset.color) {
-				selectColor(e.target.dataset.color);
-			} else if (e.target.dataset.customIndex) {
-				state.colorToReplace = null;
-				htmlColorPicker.click();
-			}
-		});
+        
+        // MODIFIED: Event listener now targets the new container
+		const colorSlotsContainer = document.getElementById('color-slots-container');
+        if(colorSlotsContainer) {
+            colorSlotsContainer.addEventListener('click', (e) => {
+                const target = e.target.closest('.color-slot');
+                if (!target) return;
+
+                if (target.dataset.color) {
+                    selectColor(target.dataset.color);
+                } else if (target.dataset.customIndex) {
+                    state.colorToReplace = null;
+                    htmlColorPicker.click();
+                }
+            });
+        }
 		
 		document.querySelectorAll('.setting-item .toggle-switch').forEach(toggleLabel => {
 			addResponsiveListener(toggleLabel, (e) => {
@@ -1312,7 +1326,6 @@ document.addEventListener('DOMContentLoaded', () => {
 			});
 		});
 
-        // --- Grid/Canvas Event Listeners ---
         gridContainer.addEventListener('mousedown', handleInteractionStart);
         drawCanvas.addEventListener('mousedown', handleInteractionStart);
         gridContainer.addEventListener('touchstart', handleInteractionStart, { passive: false });
@@ -1330,8 +1343,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         window.addEventListener('resize', resizeCanvas);
 
-
-        // Final init calls
         showScreen('home');
 		updateModeUI();
 		renderColorPicker();

@@ -742,11 +742,26 @@ document.addEventListener('DOMContentLoaded', () => {
 		
 		const pos = getMousePos(e);
 
-        if (state.clickCell && pos.onGrid && (pos.row !== state.clickCell.r || pos.col !== state.clickCell.c)) {
-            state.isDragging = true;
-        }
+		// This is the key change. We check if a drag is *starting*.
+		if (state.clickCell && pos.onGrid && (pos.row !== state.clickCell.r || pos.col !== state.clickCell.c)) {
+			// If this is the first moment we detect a drag...
+			if (!state.isDragging) {
+				state.isDragging = true; // Set dragging to true first
 
-        if (!state.isDragging) return;
+				// ...and if we are in 'mark' mode, mark the STARTING cell.
+				if (state.activeMode === 'mark') {
+					const { r, c } = state.clickCell; // Use the original cell from mousedown
+					if (state.playerGrid[r][c] === 0) { // Only mark if it's empty
+						if (applyMarkChange(r, c, 0, 2)) {
+							pushHistory({ type: 'mark', r, c, from: 0, to: 2 });
+						}
+					}
+				}
+			}
+		}
+
+		// If we're not dragging, don't do anything else.
+		if (!state.isDragging) return;
 		
 		if (!pos.onGrid) {
 			handleMouseUp(e);
@@ -755,9 +770,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
 		if (state.isLeftDown) {
 			if (state.activeMode === 'mark') {
+				// This part is the same, marking the cell the mouse is currently over.
 				const { row, col } = pos;
-				const fromState = state.playerGrid[row][col];
-				if (fromState === 0) { // Only place X on empty cells
+				if (state.playerGrid[row][col] === 0) { // Only place X on empty cells
 					if (applyMarkChange(row, col, 0, 2)) {
 						pushHistory({ type: 'mark', r: row, c: col, from: 0, to: 2 });
 					}
