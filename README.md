@@ -2,25 +2,19 @@
 
 This repository contains a web-based version of the Star Battle puzzle game. It features a robust Python/Flask backend for puzzle generation and solving, and a responsive HTML/CSS/JS frontend for gameplay.
 
-This project has two primary ways to run it: a zero-setup live demo and a fully self-hosted local version.
+---
+
+## Live Demo
+
+Click the link below to play the live version instantly in your browser. No setup is required.
+
+[**https://joseph-w-bryant.github.io/StarbattlesTools/LiveDemo**](https://joseph-w-bryant.github.io/StarbattlesTools/LiveDemo)
 
 ---
 
-## Option 1: Live Demo (No Setup Required)
+## Running Locally
 
-This is the quickest way to try the application. The frontend is pre-configured to connect to a live backend server hosted on PythonAnywhere.
-
-### How to Run:
-1.  Navigate into the `LiveDemo/` folder.
-2.  Open the `index.html` file directly in your web browser (e.g., Chrome, Firefox, Safari).
-
-That's it! The application will load and be fully functional.
-
----
-
-## Option 2: Local Web App (Self-Hosted)
-
-This option allows you to run both the backend server and the frontend on your own machine. This is ideal for development, offline use, or if you wish to host the entire application yourself. The frontend in the `localWebApp` folder is already configured to connect to the local backend.
+Follow these instructions if you want to run both the backend server and the frontend on your own machine. This is ideal for development or offline use.
 
 ### 1. Backend Server Setup
 
@@ -55,9 +49,9 @@ The backend will now be running at `http://127.0.0.1:5001`. Keep this terminal w
 
 ### 3. Run the Frontend Application
 
-With the backend server running, simply open the `localWebApp/index.html` file in your web browser. The application will connect to your local backend and be fully functional.
+With the backend server running, simply open the `localWebApp/index.html` file in your web browser. The application is already configured to connect to your local backend and will be fully functional.
 
-> **Note:** The frontend files in `LiveDemo/` and `localWebApp/` are identical except for the `API_BASE_URL` variable in `script.js`, which is pre-set in each version to point to the correct backend.
+> **Note:** The `LiveDemo` and `localWebApp` versions are identical except for the `API_BASE_URL` variable in `script.js`, which is pre-set in each version to point to the correct backend (live vs. local).
 
 ---
 
